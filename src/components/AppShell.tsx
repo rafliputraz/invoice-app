@@ -136,7 +136,7 @@ export default function AppShell({
       <div className="mt-2 flex h-16 items-center px-6">
         <div className="mr-3">
           <Image
-            src="/logo.png"
+            src="/logo-sfl.png"
             alt="Salam Fortuna Logistik"
             width={48}
             height={48}
