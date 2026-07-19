@@ -19,7 +19,7 @@ export async function GET() {
   const rows = db
     .prepare(
       `SELECT id, username, name, role, created_at AS createdAt,
-              last_seen AS lastSeen
+              last_seen AS lastSeen, last_logout AS lastLogout
        FROM users ORDER BY id`
     )
     .all();

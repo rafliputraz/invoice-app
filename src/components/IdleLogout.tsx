@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 // Log the user out after this much inactivity; warn shortly before.
 const IDLE_LIMIT = 10 * 60 * 1000; // 10 minutes
 const WARN_BEFORE = 60 * 1000; // show the countdown for the final 60s
+const HEARTBEAT = 60 * 1000; // refresh the sliding session this often while active
 
 /**
  * Auto-logout on inactivity. Mount once on authenticated pages. Any mouse /
@@ -15,6 +16,7 @@ const WARN_BEFORE = 60 * 1000; // show the countdown for the final 60s
 export default function IdleLogout() {
   const router = useRouter();
   const lastActivity = useRef(Date.now());
+  const lastHeartbeat = useRef(Date.now());
   const loggingOut = useRef(false);
   const [remaining, setRemaining] = useState<number | null>(null);
 
@@ -54,6 +56,12 @@ export default function IdleLogout() {
         setRemaining(Math.ceil((IDLE_LIMIT - elapsed) / 1000));
       } else {
         setRemaining((r) => (r === null ? r : null));
+        // While genuinely active, refresh the sliding session cookie so it
+        // doesn't expire mid-use. Stops once the warning is up (idle).
+        if (Date.now() - lastHeartbeat.current >= HEARTBEAT) {
+          lastHeartbeat.current = Date.now();
+          fetch("/api/auth/me").catch(() => {});
+        }
       }
     }, 1000);
 

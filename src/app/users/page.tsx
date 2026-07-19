@@ -11,6 +11,7 @@ interface UserRow {
   role: "admin" | "member";
   createdAt: string;
   lastSeen: string | null;
+  lastLogout: string | null;
 }
 
 interface Me {
@@ -37,18 +38,28 @@ function splitStamp(s: string): { date: string; time: string } {
   return { date: d ? fmtDate(d) : s, time: t?.slice(0, 8) ?? "" };
 }
 
-/** Relative "last active" label; online if seen within ~3 minutes. */
-function lastActive(iso: string | null): { text: string; online: boolean } {
-  if (!iso) return { text: "Belum pernah", online: false };
-  const then = new Date(iso.replace(" ", "T")).getTime();
+/**
+ * Last-active state. "Online" means the user was active within the last few
+ * minutes AND has not logged out since — so logging out shows them offline
+ * immediately even though they were just active.
+ */
+function lastActive(
+  lastSeen: string | null,
+  lastLogout: string | null
+): { text: string; online: boolean } {
+  if (!lastSeen) return { text: "Belum pernah", online: false };
+  const then = new Date(lastSeen.replace(" ", "T")).getTime();
   if (Number.isNaN(then)) return { text: "—", online: false };
   const mins = Math.floor((Date.now() - then) / 60000);
-  if (mins < 3) return { text: "Online now", online: true };
+  // Logged out after their last activity → not online.
+  const loggedOut = lastLogout != null && lastLogout >= lastSeen;
+  if (mins < 3 && !loggedOut) return { text: "Online now", online: true };
+  if (mins < 1) return { text: "Baru saja", online: false };
   if (mins < 60) return { text: `${mins} menit lalu`, online: false };
   const hours = Math.floor(mins / 60);
   if (hours < 24) return { text: `${hours} jam lalu`, online: false };
   if (hours < 48) return { text: "Kemarin", online: false };
-  return { text: fmtDate(iso.split(" ")[0]), online: false };
+  return { text: fmtDate(lastSeen.split(" ")[0]), online: false };
 }
 
 const inputCls =
@@ -377,7 +388,7 @@ export default function UsersPage() {
                 ) : (
                   filtered.map((u) => {
                     const isYou = me?.id === u.id;
-                    const active = lastActive(u.lastSeen);
+                    const active = lastActive(u.lastSeen, u.lastLogout);
                     const added = splitStamp(u.createdAt);
                     return (
                       <tr

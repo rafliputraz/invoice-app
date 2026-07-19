@@ -1,5 +1,10 @@
 import { NextResponse } from "next/server";
 import { getSessionUser } from "@/lib/auth-server";
+import {
+  SESSION_COOKIE,
+  createSessionToken,
+  sessionCookieOptions,
+} from "@/lib/auth";
 import { getDb } from "@/lib/db";
 
 export const dynamic = "force-dynamic";
@@ -9,7 +14,7 @@ export async function GET() {
   if (!user) {
     return NextResponse.json({ error: "Not logged in" }, { status: 401 });
   }
-  // Refresh the "last active" stamp — called once per page load by the shell.
+  // Refresh the "last active" stamp — the client calls this as a heartbeat.
   try {
     getDb()
       .prepare(
@@ -19,5 +24,14 @@ export async function GET() {
   } catch {
     // column may not exist on a very old DB; ignore
   }
-  return NextResponse.json(user);
+  // Slide the session forward so an active user stays logged in; an idle one
+  // (no heartbeat) lets the cookie expire.
+  const res = NextResponse.json(user);
+  try {
+    const token = await createSessionToken(user);
+    res.cookies.set(SESSION_COOKIE, token, sessionCookieOptions());
+  } catch {
+    // if re-issuing fails, the existing cookie still stands
+  }
+  return res;
 }

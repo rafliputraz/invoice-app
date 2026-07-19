@@ -76,6 +76,14 @@ function createDb(): Database.Database {
     // column already exists
   }
 
+  // Migration: when the user last logged out — makes the online indicator
+  // accurate (someone who logged out is not "online" even if recently active).
+  try {
+    db.exec("ALTER TABLE users ADD COLUMN last_logout TEXT");
+  } catch {
+    // column already exists
+  }
+
   // First run: seed the admin account from env (fallback admin / admin123 —
   // change AUTH_ADMIN_PASSWORD in .env before deploying).
   const userCount = (

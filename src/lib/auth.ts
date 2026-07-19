@@ -4,7 +4,10 @@ import { SignJWT, jwtVerify } from "jose";
 // edge middleware. Cookie reading lives in auth-server.ts.
 
 export const SESSION_COOKIE = "sfl_session";
-const SESSION_DAYS = 7;
+// Sliding idle window: the session expires this long after the last activity.
+// The client refreshes it (heartbeat) while active, so an idle/closed tab is
+// logged out server-side even if JavaScript isn't running.
+export const SESSION_TTL_MINUTES = 15;
 
 export interface SessionUser {
   id: number;
@@ -33,7 +36,7 @@ export async function createSessionToken(user: SessionUser): Promise<string> {
     .setProtectedHeader({ alg: "HS256" })
     .setSubject(String(user.id))
     .setIssuedAt()
-    .setExpirationTime(`${SESSION_DAYS}d`)
+    .setExpirationTime(`${SESSION_TTL_MINUTES}m`)
     .sign(secretKey());
 }
 
@@ -64,6 +67,6 @@ export function sessionCookieOptions() {
       process.env.NODE_ENV === "production" &&
       process.env.AUTH_INSECURE_COOKIE !== "1",
     path: "/",
-    maxAge: SESSION_DAYS * 24 * 60 * 60,
+    maxAge: SESSION_TTL_MINUTES * 60,
   };
 }
