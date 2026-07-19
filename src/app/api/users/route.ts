@@ -18,7 +18,9 @@ export async function GET() {
   const db = getDb();
   const rows = db
     .prepare(
-      "SELECT id, username, name, role, created_at AS createdAt FROM users ORDER BY id"
+      `SELECT id, username, name, role, created_at AS createdAt,
+              last_seen AS lastSeen
+       FROM users ORDER BY id`
     )
     .all();
   return NextResponse.json(rows);

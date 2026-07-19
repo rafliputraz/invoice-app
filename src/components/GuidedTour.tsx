@@ -1,8 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
-const TOUR_KEY = "sfl_tour_done";
+// Per-user key: each account sees the tour once, even when several people
+// share the same browser/device.
+const tourKeyFor = (userKey: string) => `sfl_tour_done:${userKey}`;
 /** Fired (window event) to replay the tour, e.g. from the help popup. */
 export const TOUR_EVENT = "sfl:start-tour";
 
@@ -48,16 +50,33 @@ const STEPS: TourStep[] = [
 export default function GuidedTour() {
   const [step, setStep] = useState<number | null>(null); // null = tour inactive
   const [rect, setRect] = useState<DOMRect | null>(null);
+  // localStorage key for the current user; set once we know who's logged in.
+  const storageKey = useRef<string | null>(null);
 
-  // Auto-start on first visit (per browser), and allow replay via event.
+  // Auto-start the first time THIS user opens the app, and allow replay.
   useEffect(() => {
     let t: ReturnType<typeof setTimeout> | undefined;
-    if (!localStorage.getItem(TOUR_KEY)) {
-      t = setTimeout(() => setStep(0), 900); // let the page settle first
-    }
+    let cancelled = false;
+
+    fetch("/api/auth/me")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((u: { id?: number; username?: string } | null) => {
+        if (cancelled) return;
+        // Key by user id (fall back to username) so each account is tracked
+        // separately; if we can't identify the user, don't auto-start.
+        const key = u?.id ?? u?.username;
+        if (key === undefined || key === null) return;
+        storageKey.current = tourKeyFor(String(key));
+        if (!localStorage.getItem(storageKey.current)) {
+          t = setTimeout(() => setStep(0), 900); // let the page settle first
+        }
+      })
+      .catch(() => {});
+
     const onReplay = () => setStep(0);
     window.addEventListener(TOUR_EVENT, onReplay);
     return () => {
+      cancelled = true;
       if (t) clearTimeout(t);
       window.removeEventListener(TOUR_EVENT, onReplay);
     };
@@ -89,7 +108,7 @@ export default function GuidedTour() {
   }, [step]);
 
   const finish = () => {
-    localStorage.setItem(TOUR_KEY, "1");
+    if (storageKey.current) localStorage.setItem(storageKey.current, "1");
     setStep(null);
     setRect(null);
   };
@@ -104,9 +123,24 @@ export default function GuidedTour() {
     height: rect.height + pad * 2,
   };
 
-  // Tooltip below the target when there is room, otherwise above.
+  // Keep the tooltip fully on-screen even when the target is taller than the
+  // viewport (e.g. a long invoice table): anchor to the visible slice of the
+  // target and clamp into the viewport so it never scrolls off-screen.
+  const vpH = window.innerHeight;
+  const gap = 12;
+  const tipH = 250; // generous height estimate used only for clamping
   const tooltipW = 320;
-  const below = spot.top + spot.height + 190 < window.innerHeight;
+  const visTop = Math.max(spot.top, 8);
+  const visBottom = Math.min(spot.top + spot.height, vpH - 8);
+  let tooltipTop: number;
+  if (visBottom + gap + tipH <= vpH - 8) {
+    tooltipTop = visBottom + gap; // below the visible part of the target
+  } else if (visTop - gap - tipH >= 8) {
+    tooltipTop = visTop - gap - tipH; // above it
+  } else {
+    tooltipTop = vpH - tipH - 12; // target fills the screen → pin near bottom
+  }
+  tooltipTop = Math.max(8, Math.min(tooltipTop, vpH - tipH - 8));
   const tooltipLeft = Math.min(
     Math.max(spot.left, 16),
     Math.max(16, window.innerWidth - tooltipW - 16)
@@ -129,11 +163,7 @@ export default function GuidedTour() {
       />
       <div
         className="absolute w-80 rounded-xl bg-white p-4 shadow-2xl transition-all duration-300"
-        style={
-          below
-            ? { top: spot.top + spot.height + 12, left: tooltipLeft }
-            : { bottom: window.innerHeight - spot.top + 12, left: tooltipLeft }
-        }
+        style={{ top: tooltipTop, left: tooltipLeft }}
       >
         <div className="mb-1 flex items-center justify-between">
           <h3 className="text-sm font-bold text-gray-800">

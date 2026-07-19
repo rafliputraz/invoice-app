@@ -69,6 +69,13 @@ function createDb(): Database.Database {
     // column already exists
   }
 
+  // Migration: track when each user was last active (updated via /api/auth/me).
+  try {
+    db.exec("ALTER TABLE users ADD COLUMN last_seen TEXT");
+  } catch {
+    // column already exists
+  }
+
   // First run: seed the admin account from env (fallback admin / admin123 —
   // change AUTH_ADMIN_PASSWORD in .env before deploying).
   const userCount = (

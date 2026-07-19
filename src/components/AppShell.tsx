@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import HelpGuide from "./HelpGuide";
+import ChangePassword from "./ChangePassword";
 import Image from "next/image";
 
 interface Me {
@@ -186,6 +187,7 @@ export default function AppShell({
               {me?.role === "admin" ? "Administrator" : "Member"}
             </span>
           </div>
+          <ChangePassword />
           <button
             onClick={logout}
             title="Logout"
