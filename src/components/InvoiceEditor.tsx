@@ -53,10 +53,6 @@ export default function InvoiceEditor({
   }, [autoPrint]);
 
   const save = async () => {
-    if (!data.dueDays || data.dueDays < 1) {
-      alert("Isi termin pembayaran (Payment due, hari) dulu sebelum save.");
-      return;
-    }
     setSaving(true);
     setSavedMsg("");
     try {

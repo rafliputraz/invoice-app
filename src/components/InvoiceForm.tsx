@@ -145,12 +145,11 @@ export default function InvoiceForm({
             />
           </Field>
         </div>
-        <Field label="Payment due (days)">
+        <Field label="Payment due (days — kosongkan jika bayar langsung)">
           <input
             type="number"
             step="1"
             min="1"
-            required
             className={inputCls}
             value={data.dueDays || ""}
             onChange={(e) =>
