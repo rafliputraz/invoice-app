@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import type { InvoiceListItem, InvoiceStatus } from "@/lib/types";
 import { fmtIdr, fmtDate } from "@/lib/format";
+import HelpGuide from "@/components/HelpGuide";
 
 interface Me {
   username: string;
@@ -273,6 +274,7 @@ export default function HomePage() {
                 Logged in as <b>{me.name || me.username}</b>
               </span>
             )}
+            <HelpGuide />
             {me?.role === "admin" && (
               <Link
                 href="/users"
