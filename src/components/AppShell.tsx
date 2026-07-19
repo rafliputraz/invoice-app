@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import HelpGuide from "./HelpGuide";
+import Image from "next/image";
 
 interface Me {
   username: string;
@@ -133,21 +134,20 @@ export default function AppShell({
     <>
       {/* Logo */}
       <div className="mt-2 flex h-16 items-center px-6">
-        <div className="mr-3 flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-blue-400 to-blue-600 shadow-glow">
-          <svg viewBox="0 0 24 24" fill="currentColor" className="h-4 w-4 text-white">
-            <path
-              fillRule="evenodd"
-              d="M14.615 1.595a.75.75 0 0 1 .359.852L12.982 9.75h7.268a.75.75 0 0 1 .548 1.262l-10.5 11.25a.75.75 0 0 1-1.272-.71l1.992-7.302H3.75a.75.75 0 0 1-.548-1.262l10.5-11.25a.75.75 0 0 1 .913-.143Z"
-              clipRule="evenodd"
-            />
-          </svg>
+        <div className="mr-3">
+          <Image
+            src="/logo.png"
+            alt="Salam Fortuna Logistik"
+            width={48}
+            height={48}
+          />
         </div>
         <div className="flex flex-col">
           <span className="text-base leading-tight font-bold tracking-tight text-white">
-            SFL Invoices
+            Salam Fortuna Logistik
           </span>
           <span className="text-[10px] font-medium tracking-wider text-slate-500 uppercase">
-            Logistics
+            App
           </span>
         </div>
       </div>
