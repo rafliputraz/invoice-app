@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import HelpGuide from "./HelpGuide";
 import ChangePassword from "./ChangePassword";
+import IdleLogout from "./IdleLogout";
 import Image from "next/image";
 
 interface Me {
@@ -210,6 +211,7 @@ export default function AppShell({
 
   return (
     <div className="app-font flex h-screen overflow-hidden bg-slate-50 text-slate-800 antialiased selection:bg-blue-100 selection:text-blue-900">
+      <IdleLogout />
       {/* Desktop sidebar */}
       <aside className="relative z-20 hidden h-full w-[260px] shrink-0 flex-col bg-slate-950 text-slate-300 md:flex">
         {sidebar}

@@ -7,6 +7,7 @@ import type { InvoiceData } from "@/lib/types";
 import { defaultInvoice } from "@/lib/defaults";
 import InvoiceForm from "./InvoiceForm";
 import InvoicePreview from "./InvoicePreview";
+import IdleLogout from "./IdleLogout";
 
 export default function InvoiceEditor({
   invoiceId,
@@ -78,6 +79,7 @@ export default function InvoiceEditor({
 
   return (
     <div className="print-root min-h-screen bg-slate-100">
+      <IdleLogout />
       {/* Toolbar */}
       <header className="no-print app-font sticky top-0 z-20 flex h-14 items-center justify-between border-b border-slate-200 bg-white px-4 shadow-sm sm:px-6">
         <div className="flex min-w-0 items-center gap-4">
