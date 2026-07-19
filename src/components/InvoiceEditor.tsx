@@ -143,7 +143,7 @@ export default function InvoiceEditor({
 
       {/* Split screen: form left, live preview right */}
       <div className="flex h-[calc(100vh-56px)]">
-        <aside className="no-print app-font z-10 flex w-full shrink-0 flex-col border-r border-slate-200 bg-white shadow-[4px_0_24px_rgba(0,0,0,0.02)] sm:w-[400px] lg:w-[460px]">
+        <aside className="no-print app-font z-10 flex w-full shrink-0 flex-col border-r border-slate-200 bg-white shadow-[4px_0_24px_rgba(0,0,0,0.02)] sm:w-[460px] lg:w-[540px]">
           <div className="border-b border-slate-100 bg-slate-50/50 p-4">
             <h2 className="text-sm font-bold text-slate-800">
               Invoice Configuration

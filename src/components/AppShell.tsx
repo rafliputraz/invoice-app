@@ -135,12 +135,13 @@ export default function AppShell({
     <>
       {/* Logo */}
       <div className="mt-2 flex h-16 items-center px-6">
-        <div className="mr-3">
+        <div className="mr-3 flex h-11 w-11 items-center justify-center rounded-xl bg-white p-1.5 shadow-md ring-1 ring-white/20">
           <Image
             src="/logo-sfl.png"
             alt="Salam Fortuna Logistik"
-            width={48}
-            height={48}
+            width={40}
+            height={40}
+            className="h-full w-full object-contain"
           />
         </div>
         <div className="flex flex-col">
