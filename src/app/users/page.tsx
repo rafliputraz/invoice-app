@@ -93,6 +93,11 @@ export default function UsersPage() {
       .then((r) => (r.ok ? r.json() : null))
       .then((u: Me | null) => setMe(u))
       .catch(() => {});
+    // Refresh periodically so the "last active" times tick and online/offline
+    // status stays current without needing a manual reload.
+    const t = setInterval(load, 20000);
+    return () => clearInterval(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const addUser = async (e: React.FormEvent) => {
