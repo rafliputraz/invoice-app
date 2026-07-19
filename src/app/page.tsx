@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import type { InvoiceListItem, InvoiceStatus } from "@/lib/types";
 import { fmtIdr, fmtDate } from "@/lib/format";
 import HelpGuide from "@/components/HelpGuide";
+import GuidedTour from "@/components/GuidedTour";
 
 interface Me {
   username: string;
@@ -285,6 +286,7 @@ export default function HomePage() {
             )}
             <Link
               href="/invoices/new"
+              data-tour="new-invoice"
               className="rounded bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
             >
               + New Invoice
@@ -300,7 +302,7 @@ export default function HomePage() {
       </header>
 
       <main className="mx-auto max-w-5xl p-6">
-        <div className="mb-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
+        <div data-tour="stats" className="mb-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
           <StatCard
             label="Invoices This Month"
             value={String(stats.monthCount)}
@@ -323,7 +325,7 @@ export default function HomePage() {
           />
         </div>
 
-        <div className="mb-4 flex gap-2">
+        <div data-tour="filters" className="mb-4 flex gap-2">
           <input
             className="flex-1 rounded border border-gray-300 bg-white px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
             placeholder="Search by invoice no or customer…"
@@ -354,7 +356,7 @@ export default function HomePage() {
           </select>
         </div>
 
-        <div className="overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm">
+        <div data-tour="table" className="overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm">
           <table className="w-full text-sm">
             <thead className="bg-gray-50 text-left text-xs text-gray-500">
               <tr>
@@ -527,6 +529,7 @@ export default function HomePage() {
           </table>
         </div>
       </main>
+      <GuidedTour />
     </div>
   );
 }

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { TOUR_EVENT } from "./GuidedTour";
 
 function Step({ n, children }: { n: number; children: React.ReactNode }) {
   return (
@@ -57,6 +58,7 @@ export default function HelpGuide() {
     <>
       <button
         onClick={() => setOpen(true)}
+        data-tour="help"
         title="Panduan penggunaan aplikasi"
         className="rounded border border-gray-300 px-3 py-2 text-sm text-gray-600 hover:bg-gray-50"
       >
@@ -196,6 +198,16 @@ export default function HelpGuide() {
                 setiap pagi. Dengan itu halaman depan selalu jadi daftar tagihan
                 yang akurat.
               </div>
+
+              <button
+                onClick={() => {
+                  setOpen(false);
+                  window.dispatchEvent(new Event(TOUR_EVENT));
+                }}
+                className="text-xs text-blue-600 hover:underline"
+              >
+                ↻ Putar ulang tur pengenalan halaman
+              </button>
             </div>
           </div>
         </div>
