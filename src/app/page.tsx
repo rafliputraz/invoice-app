@@ -1,18 +1,12 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { Suspense, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import type { InvoiceListItem, InvoiceStatus } from "@/lib/types";
 import { fmtIdr, fmtDate } from "@/lib/format";
-import HelpGuide from "@/components/HelpGuide";
+import AppShell from "@/components/AppShell";
 import GuidedTour from "@/components/GuidedTour";
-
-interface Me {
-  username: string;
-  name: string;
-  role: string;
-}
 
 type SortKey = "invoiceNo" | "invoiceDate" | "customerName" | "totalIdr" | "dueDate";
 type StatusFilter = "all" | "unpaid" | "overdue" | "paid";
@@ -35,30 +29,75 @@ function isOverdue(inv: InvoiceListItem): boolean {
   );
 }
 
+function initialsOf(name: string): string {
+  return (
+    name
+      .replace(/^(PT|CV|UD|PD)\.?\s+/i, "")
+      .split(/\s+/)
+      .map((w) => w[0])
+      .join("")
+      .slice(0, 2)
+      .toUpperCase() || "?"
+  );
+}
+
 function StatCard({
   label,
   value,
   sub,
   tone,
+  icon,
 }: {
   label: string;
   value: string;
   sub?: string;
   tone?: "amber" | "red";
+  icon: string;
 }) {
   const valueCls =
     tone === "red"
-      ? "text-red-600"
+      ? "text-rose-600"
       : tone === "amber"
         ? "text-amber-600"
-        : "text-gray-800";
+        : "text-slate-900";
+  const chipCls =
+    tone === "red"
+      ? "bg-rose-50 text-rose-600"
+      : tone === "amber"
+        ? "bg-amber-50 text-amber-600"
+        : "bg-slate-100 text-slate-600";
   return (
-    <div className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
-      <div className="text-xs text-gray-500">{label}</div>
-      <div className={`mt-1 font-mono text-lg font-semibold ${valueCls}`}>
-        {value}
+    <div className="relative overflow-hidden rounded-xl border border-slate-200/80 bg-white p-5 shadow-card">
+      <div className="relative z-10 mb-2 flex items-start justify-between">
+      <span className="text-sm font-semibold text-slate-500">{label}</span>
+        <span className={`rounded-lg p-1.5 ${chipCls}`}>
+          <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d={icon} />
+          </svg>
+        </span>
       </div>
-      {sub && <div className="mt-0.5 text-xs text-gray-400">{sub}</div>}
+      <div className="relative z-10">
+        <h3 className={`font-mono text-2xl font-extrabold tracking-tight ${valueCls}`}>
+          {value}
+        </h3>
+        {sub && (
+          <p className="mt-1 text-xs font-medium text-slate-500">{sub}</p>
+        )}
+      </div>
+      <svg
+        className="absolute bottom-0 left-0 h-12 w-full text-slate-100"
+        preserveAspectRatio="none"
+        viewBox="0 0 100 20"
+        fill="none"
+        stroke="currentColor"
+      >
+        <path
+          d="M0 20 Q 20 15, 30 18 T 60 10 T 100 5"
+          strokeWidth="2"
+          strokeLinecap="round"
+          fill="none"
+        />
+      </svg>
     </div>
   );
 }
@@ -69,45 +108,31 @@ function DueBadge({ inv }: { inv: InvoiceListItem }) {
   let cls: string;
   let text: string;
   if (days < 0) {
-    cls = "bg-red-100 text-red-700";
+    cls = "bg-rose-50 text-rose-700 border border-rose-200";
     text = `telat ${-days} hr`;
   } else if (days <= 7) {
-    cls = "bg-amber-100 text-amber-700";
+    cls = "bg-amber-50 text-amber-700 border border-amber-200";
     text = days === 0 ? "hari ini" : `${days} hr lagi`;
   } else {
-    cls = "bg-gray-100 text-gray-500";
+    cls = "bg-slate-100 text-slate-500 border border-slate-200";
     text = `sisa ${days} hr`;
   }
   return (
-    <span className={`ml-2 rounded-full px-2 py-0.5 text-xs ${cls}`}>
+    <span className={`ml-2 rounded-full px-2 py-0.5 text-xs font-medium ${cls}`}>
       {text}
     </span>
   );
 }
 
-export default function HomePage() {
-  const router = useRouter();
+function HomeInner() {
+  const searchParams = useSearchParams();
   const [invoices, setInvoices] = useState<InvoiceListItem[]>([]);
   const [loading, setLoading] = useState(true);
-  const [search, setSearch] = useState("");
+  const [search, setSearch] = useState(searchParams.get("q") ?? "");
   const [monthFilter, setMonthFilter] = useState("all"); // "all" | "YYYY-MM"
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
   const [sortKey, setSortKey] = useState<SortKey | null>(null); // null = API order
   const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
-  const [me, setMe] = useState<Me | null>(null);
-
-  useEffect(() => {
-    fetch("/api/auth/me")
-      .then((r) => (r.ok ? r.json() : null))
-      .then((u: Me | null) => setMe(u))
-      .catch(() => {});
-  }, []);
-
-  const logout = async () => {
-    await fetch("/api/auth/logout", { method: "POST" });
-    router.replace("/login");
-    router.refresh();
-  };
 
   const load = () => {
     fetch("/api/invoices")
@@ -119,7 +144,7 @@ export default function HomePage() {
   useEffect(load, []);
 
   const remove = async (id: number, invoiceNo: string) => {
-    if (!confirm(`Delete invoice ${invoiceNo}?`)) return;
+    if (!confirm(`Pindahkan invoice ${invoiceNo} ke trash?`)) return;
     await fetch(`/api/invoices/${id}`, { method: "DELETE" });
     load();
   };
@@ -154,6 +179,14 @@ export default function HomePage() {
     }
   };
 
+  const exportUrl = useMemo(() => {
+    const params = new URLSearchParams();
+    if (monthFilter !== "all") params.set("month", monthFilter);
+    if (statusFilter !== "all") params.set("status", statusFilter);
+    const qs = params.toString();
+    return "/api/invoices/export" + (qs ? `?${qs}` : "");
+  }, [monthFilter, statusFilter]);
+
   const months = useMemo(
     () =>
       [...new Set(invoices.map((inv) => inv.invoiceDate.slice(0, 7)))].sort(
@@ -173,6 +206,7 @@ export default function HomePage() {
       monthCount: thisMonth.length,
       monthTotal: sum(thisMonth),
       outstanding: sum(unpaid),
+      outstandingCount: unpaid.length,
       overdueCount: overdue.length,
       overdueTotal: sum(overdue),
     };
@@ -239,15 +273,109 @@ export default function HomePage() {
     k: SortKey;
     right?: boolean;
   }) => (
-    <th className={`px-4 py-2 font-medium ${right ? "text-right" : ""}`}>
+    <th
+      className={`px-6 py-3 text-xs font-bold tracking-wider text-slate-500 uppercase ${
+        right ? "text-right" : "text-left"
+      }`}
+    >
       <button
         onClick={() => toggleSort(k)}
-        className="cursor-pointer hover:text-gray-700"
+        className="cursor-pointer uppercase hover:text-slate-800"
       >
         {label}
         {sortKey === k && (sortDir === "asc" ? " ▲" : " ▼")}
       </button>
     </th>
+  );
+
+  // Status badge + change-status popover; shared by the desktop table and
+  // the mobile card list.
+  const StatusBadge = ({
+    inv,
+    align = "left",
+  }: {
+    inv: InvoiceListItem;
+    align?: "left" | "right";
+  }) => (
+    <div className="relative inline-block">
+      <button
+        onClick={() =>
+          setStatusMenuId((cur) => (cur === inv.id ? null : inv.id))
+        }
+        disabled={savingStatusId === inv.id}
+        title="Change payment status"
+        className={`inline-flex items-center rounded-md border px-2.5 py-1 text-xs font-bold transition-colors disabled:opacity-60 ${
+          inv.status === "paid"
+            ? "border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100"
+            : "border-amber-200 bg-amber-50 text-amber-700 hover:bg-amber-100"
+        }`}
+      >
+        <span
+          className={`mr-2 h-1.5 w-1.5 rounded-full ${
+            inv.status === "paid" ? "bg-emerald-500" : "bg-amber-500"
+          }`}
+        />
+        {savingStatusId === inv.id
+          ? "Saving…"
+          : inv.status === "paid"
+            ? "Paid"
+            : "Unpaid"}
+        <svg className="ml-1 h-3 w-3 opacity-50" viewBox="0 0 20 20" fill="currentColor">
+          <path
+            fillRule="evenodd"
+            d="M5.23 7.21a.75.75 0 0 1 1.06.02L10 11.17l3.71-3.94a.75.75 0 1 1 1.08 1.04l-4.25 4.5a.75.75 0 0 1-1.08 0l-4.25-4.5a.75.75 0 0 1 .02-1.06Z"
+            clipRule="evenodd"
+          />
+        </svg>
+      </button>
+      {statusMenuId === inv.id && (
+        <>
+          <div
+            className="fixed inset-0 z-10"
+            onClick={() => setStatusMenuId(null)}
+          />
+          <div
+            className={`absolute z-20 mt-1 w-44 overflow-hidden rounded-lg border border-slate-200 bg-white py-1 text-left shadow-lg ${
+              align === "right" ? "right-0" : "left-0"
+            }`}
+          >
+            {(
+              [
+                ["paid", "Paid", "bg-emerald-500", "Pembayaran diterima"],
+                ["unpaid", "Unpaid", "bg-amber-500", "Belum dibayar"],
+              ] as const
+            ).map(([value, label, dot, desc]) => (
+              <button
+                key={value}
+                onClick={() => setStatus(inv, value)}
+                className="flex w-full items-center gap-2 px-3 py-2 text-left text-xs hover:bg-slate-50"
+              >
+                <span className={`h-2 w-2 shrink-0 rounded-full ${dot}`} />
+                <span className="flex-1">
+                  <span className="block font-medium text-slate-700">
+                    {label}
+                  </span>
+                  <span className="block text-slate-400">{desc}</span>
+                </span>
+                {inv.status === value && (
+                  <svg
+                    className="h-3.5 w-3.5 text-blue-600"
+                    viewBox="0 0 20 20"
+                    fill="currentColor"
+                  >
+                    <path
+                      fillRule="evenodd"
+                      d="M16.7 5.3a1 1 0 0 1 0 1.4l-7.5 7.5a1 1 0 0 1-1.4 0l-3.5-3.5a1 1 0 1 1 1.4-1.4l2.8 2.79 6.8-6.8a1 1 0 0 1 1.4 0Z"
+                      clipRule="evenodd"
+                    />
+                  </svg>
+                )}
+              </button>
+            ))}
+          </div>
+        </>
+      )}
+    </div>
   );
 
   const monthLabel = (ym: string) =>
@@ -256,280 +384,364 @@ export default function HomePage() {
       year: "numeric",
     });
 
-  const selectCls =
-    "rounded border border-gray-300 bg-white px-3 py-2 text-sm focus:border-blue-500 focus:outline-none";
+  const TABS: { key: StatusFilter; label: string }[] = [
+    { key: "all", label: "All Invoices" },
+    { key: "unpaid", label: "Unpaid" },
+    { key: "overdue", label: "Overdue" },
+    { key: "paid", label: "Paid" },
+  ];
 
   return (
-    <div className="min-h-screen bg-gray-100">
-      <header className="border-b border-gray-200 bg-white px-6 py-4 shadow-sm">
-        <div className="mx-auto flex max-w-5xl items-center justify-between">
-          <div>
-            <h1 className="text-lg font-bold text-gray-800">SFL Invoices</h1>
-            <p className="text-xs text-gray-500">
-              PT. Salam Fortuna Logistik
-            </p>
-          </div>
-          <div className="flex items-center gap-3">
-            {me && (
-              <span className="text-xs text-gray-500">
-                Logged in as <b>{me.name || me.username}</b>
-              </span>
-            )}
-            <HelpGuide />
-            {me?.role === "admin" && (
-              <Link
-                href="/users"
-                className="rounded border border-gray-300 px-3 py-2 text-sm text-gray-600 hover:bg-gray-50"
-              >
-                Users
-              </Link>
-            )}
-            <Link
-              href="/invoices/new"
-              data-tour="new-invoice"
-              className="rounded bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
-            >
-              + New Invoice
-            </Link>
+    <AppShell
+      active="invoices"
+      title="Invoice Overview"
+      subtitle="Manage and track all billing for PT. Salam Fortuna Logistik."
+      invoiceCount={invoices.length}
+      bellDot={stats.overdueCount > 0}
+      onBellClick={() => setStatusFilter("overdue")}
+    >
+      {/* Metric cards */}
+      <div
+        data-tour="stats"
+        className="mb-8 grid grid-cols-1 gap-5 sm:grid-cols-2 md:grid-cols-4"
+      >
+        <StatCard
+          label="Invoices This Month"
+          value={String(stats.monthCount)}
+          icon="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+        />
+        <StatCard
+          label="Total This Month"
+          value={fmtIdr(stats.monthTotal)}
+          sub="nilai invoice bulan ini (IDR)"
+          icon="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+        />
+        <StatCard
+          label="Outstanding"
+          value={fmtIdr(stats.outstanding)}
+          sub={
+            stats.outstandingCount > 0
+              ? `${stats.outstandingCount} invoice belum dibayar`
+              : "semua sudah dibayar"
+          }
+          tone="amber"
+          icon="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3Z"
+        />
+        <StatCard
+          label="Overdue"
+          value={fmtIdr(stats.overdueTotal)}
+          sub={
+            stats.overdueCount > 0
+              ? `${stats.overdueCount} invoice perlu ditagih`
+              : "Tidak ada yang telat 🎉"
+          }
+          tone={stats.overdueCount > 0 ? "red" : undefined}
+          icon="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+        />
+      </div>
+
+      {/* Table card */}
+      <div className="flex flex-col rounded-xl border border-slate-200 bg-white shadow-card">
+        {/* Tabs */}
+        <div className="mt-2 flex gap-6 overflow-x-auto border-b border-slate-200 px-6">
+          {TABS.map((tab) => (
             <button
-              onClick={logout}
-              className="rounded px-3 py-2 text-sm text-gray-500 hover:bg-gray-100"
+              key={tab.key}
+              onClick={() => setStatusFilter(tab.key)}
+              className={`shrink-0 border-b-2 px-1 py-3 text-sm transition-colors ${
+                statusFilter === tab.key
+                  ? "border-blue-500 font-bold text-blue-600"
+                  : "border-transparent font-medium text-slate-500 hover:border-slate-300 hover:text-slate-800"
+              }`}
             >
-              Logout
+              {tab.label}
+              {tab.key === "all" && (
+                <span className="ml-1 rounded-full bg-blue-100 px-2 py-0.5 text-[10px] font-bold text-blue-700">
+                  {invoices.length}
+                </span>
+              )}
             </button>
+          ))}
+        </div>
+
+        {/* Toolbar */}
+        <div
+          data-tour="filters"
+          className="flex flex-wrap items-center justify-between gap-4 bg-slate-50/50 px-6 py-4"
+        >
+          <div className="relative w-full max-w-sm">
+            <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400">
+              <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth="2"
+                  d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                />
+              </svg>
+            </div>
+            <input
+              type="text"
+              placeholder="Search by customer, invoice no…"
+              className="block w-full rounded-lg border border-slate-300 bg-white py-2 pr-3 pl-9 text-sm placeholder-slate-400 shadow-sm transition-all focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+            />
+          </div>
+
+          <div className="flex gap-3">
+            <select
+              className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 shadow-sm focus:border-blue-500 focus:outline-none"
+              value={monthFilter}
+              onChange={(e) => setMonthFilter(e.target.value)}
+            >
+              <option value="all">All months</option>
+              {months.map((ym) => (
+                <option key={ym} value={ym}>
+                  {monthLabel(ym)}
+                </option>
+              ))}
+            </select>
+            <a
+              href={exportUrl}
+              title="Download rekap CSV (mengikuti filter bulan & status)"
+              className="flex items-center gap-2 rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 shadow-sm transition-colors hover:bg-slate-50 hover:text-slate-900"
+            >
+              <svg
+                className="h-4 w-4 text-slate-400"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth="2"
+                  d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
+                />
+              </svg>
+              Export
+            </a>
           </div>
         </div>
-      </header>
 
-      <main className="mx-auto max-w-5xl p-6">
-        <div data-tour="stats" className="mb-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
-          <StatCard
-            label="Invoices This Month"
-            value={String(stats.monthCount)}
-          />
-          <StatCard label="Total This Month" value={fmtIdr(stats.monthTotal)} />
-          <StatCard
-            label="Outstanding (Unpaid)"
-            value={fmtIdr(stats.outstanding)}
-            tone="amber"
-          />
-          <StatCard
-            label="Overdue"
-            value={fmtIdr(stats.overdueTotal)}
-            sub={
-              stats.overdueCount > 0
-                ? `${stats.overdueCount} invoice perlu ditagih`
-                : "tidak ada yang telat"
-            }
-            tone="red"
-          />
-        </div>
-
-        <div data-tour="filters" className="mb-4 flex gap-2">
-          <input
-            className="flex-1 rounded border border-gray-300 bg-white px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
-            placeholder="Search by invoice no or customer…"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-          />
-          <select
-            className={selectCls}
-            value={monthFilter}
-            onChange={(e) => setMonthFilter(e.target.value)}
-          >
-            <option value="all">All months</option>
-            {months.map((ym) => (
-              <option key={ym} value={ym}>
-                {monthLabel(ym)}
-              </option>
-            ))}
-          </select>
-          <select
-            className={selectCls}
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value as StatusFilter)}
-          >
-            <option value="all">All status</option>
-            <option value="unpaid">Unpaid</option>
-            <option value="overdue">Overdue</option>
-            <option value="paid">Paid</option>
-          </select>
-        </div>
-
-        <div data-tour="table" className="overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm">
-          <table className="w-full text-sm">
-            <thead className="bg-gray-50 text-left text-xs text-gray-500">
-              <tr>
-                <SortableTh label="Invoice No" k="invoiceNo" />
-                <SortableTh label="Date" k="invoiceDate" />
-                <SortableTh label="Customer" k="customerName" />
-                <th className="px-4 py-2 font-medium">By</th>
-                <SortableTh label="Total (IDR)" k="totalIdr" right />
-                <SortableTh label="Due" k="dueDate" />
-                <th className="px-4 py-2 font-medium">Status</th>
-                <th className="px-4 py-2"></th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100">
-              {loading ? (
-                <tr>
-                  <td colSpan={8} className="px-4 py-8 text-center text-gray-400">
-                    Loading…
-                  </td>
+        <div data-tour="table">
+          {/* Desktop table */}
+          <div className="hidden overflow-x-auto md:block">
+            <table className="w-full border-collapse text-left">
+              <thead>
+                <tr className="border-y border-slate-200 bg-slate-50">
+                  <SortableTh label="Invoice" k="invoiceNo" />
+                  <SortableTh label="Client" k="customerName" />
+                  <th className="px-6 py-3 text-left text-xs font-bold tracking-wider text-slate-500 uppercase">
+                    By
+                  </th>
+                  <SortableTh label="Amount" k="totalIdr" right />
+                  <SortableTh label="Due" k="dueDate" />
+                  <th className="px-6 py-3 text-left text-xs font-bold tracking-wider text-slate-500 uppercase">
+                    Status
+                  </th>
+                  <th className="px-6 py-3" />
                 </tr>
-              ) : sorted.length === 0 ? (
-                <tr>
-                  <td colSpan={8} className="px-4 py-8 text-center text-gray-400">
-                    {invoices.length === 0
-                      ? "No invoices yet — create your first one."
-                      : "No matches."}
-                  </td>
-                </tr>
-              ) : (
-                sorted.map((inv) => (
-                  <tr
-                    key={inv.id}
-                    className={
-                      isOverdue(inv)
-                        ? "bg-red-50/40 hover:bg-red-50/70"
-                        : "hover:bg-blue-50/40"
-                    }
-                  >
-                    <td className="px-4 py-2 font-mono">
-                      <Link
-                        href={`/invoices/${inv.id}`}
-                        className="text-blue-600 hover:underline"
-                      >
-                        {inv.invoiceNo}
-                      </Link>
+              </thead>
+              <tbody className="divide-y divide-slate-100 bg-white">
+                {loading ? (
+                  <tr>
+                    <td colSpan={7} className="px-6 py-10 text-center text-slate-400">
+                      Loading…
                     </td>
-                    <td className="px-4 py-2">{fmtDate(inv.invoiceDate)}</td>
-                    <td className="px-4 py-2">{inv.customerName}</td>
-                    <td className="px-4 py-2 text-xs text-gray-500">
-                      {inv.createdBy || "—"}
+                  </tr>
+                ) : sorted.length === 0 ? (
+                  <tr>
+                    <td colSpan={7} className="px-6 py-10 text-center text-slate-400">
+                      {invoices.length === 0
+                        ? "No invoices yet — create your first one."
+                        : "No matches."}
                     </td>
-                    <td className="px-4 py-2 text-right font-mono">
+                  </tr>
+                ) : (
+                  sorted.map((inv) => (
+                    <tr
+                      key={inv.id}
+                      className={`group transition-colors ${
+                        isOverdue(inv)
+                          ? "bg-rose-50/40 hover:bg-rose-50/70"
+                          : "hover:bg-blue-50/30"
+                      }`}
+                    >
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="flex flex-col">
+                          <Link
+                            href={`/invoices/${inv.id}`}
+                            className="font-mono text-sm font-bold text-blue-600 transition-colors hover:text-blue-800"
+                          >
+                            {inv.invoiceNo}
+                          </Link>
+                          <span className="mt-0.5 text-xs text-slate-500">
+                            Issued: {fmtDate(inv.invoiceDate)}
+                          </span>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="flex items-center">
+                          <div className="mr-3 flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-indigo-200 bg-gradient-to-tr from-indigo-100 to-blue-100 text-xs font-bold text-indigo-700 shadow-sm">
+                            {initialsOf(inv.customerName)}
+                          </div>
+                          <span className="text-sm font-bold text-slate-800">
+                            {inv.customerName || "—"}
+                          </span>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 text-xs text-slate-500">
+                        {inv.createdBy || "—"}
+                      </td>
+                      <td className="px-6 py-4 text-right font-mono text-sm font-bold whitespace-nowrap text-slate-900">
+                        {fmtIdr(inv.totalIdr)}
+                      </td>
+                      <td className="px-6 py-4 text-sm whitespace-nowrap text-slate-600">
+                        {inv.dueDate ? (
+                          <>
+                            {fmtDate(inv.dueDate)}
+                            <DueBadge inv={inv} />
+                          </>
+                        ) : (
+                          "—"
+                        )}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <StatusBadge inv={inv} />
+                      </td>
+                      <td className="px-6 py-4 text-right whitespace-nowrap">
+                        <div className="flex items-center justify-end gap-2 opacity-0 transition-opacity group-hover:opacity-100">
+                          <Link
+                            href={`/invoices/${inv.id}?print=1`}
+                            className="rounded border border-slate-300 bg-white px-3 py-1.5 text-xs font-bold text-slate-700 shadow-sm transition-colors hover:bg-slate-50"
+                          >
+                            Print
+                          </Link>
+                          <button
+                            onClick={() => remove(inv.id, inv.invoiceNo)}
+                            title="Move to trash"
+                            className="rounded p-1.5 text-slate-400 transition-colors hover:bg-rose-50 hover:text-rose-600"
+                          >
+                            <svg
+                              className="h-4 w-4"
+                              fill="none"
+                              stroke="currentColor"
+                              viewBox="0 0 24 24"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth="2"
+                                d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                              />
+                            </svg>
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Mobile cards */}
+          <div className="space-y-3 p-4 md:hidden">
+            {loading ? (
+              <div className="rounded-lg border border-slate-200 bg-white py-8 text-center text-sm text-slate-400">
+                Loading…
+              </div>
+            ) : sorted.length === 0 ? (
+              <div className="rounded-lg border border-slate-200 bg-white py-8 text-center text-sm text-slate-400">
+                {invoices.length === 0
+                  ? "No invoices yet — create your first one."
+                  : "No matches."}
+              </div>
+            ) : (
+              sorted.map((inv) => (
+                <div
+                  key={inv.id}
+                  className={`rounded-lg border p-4 shadow-sm ${
+                    isOverdue(inv)
+                      ? "border-rose-200 bg-rose-50/40"
+                      : "border-slate-200 bg-white"
+                  }`}
+                >
+                  <div className="flex items-center justify-between gap-2">
+                    <Link
+                      href={`/invoices/${inv.id}`}
+                      className="font-mono text-sm font-bold text-blue-600 hover:underline"
+                    >
+                      {inv.invoiceNo}
+                    </Link>
+                    <StatusBadge inv={inv} align="right" />
+                  </div>
+                  <div className="mt-1 flex items-baseline justify-between gap-2">
+                    <span className="text-sm font-bold text-slate-800">
+                      {inv.customerName || "—"}
+                    </span>
+                    <span className="shrink-0 text-xs text-slate-500">
+                      {fmtDate(inv.invoiceDate)}
+                    </span>
+                  </div>
+                  <div className="mt-2 flex items-center justify-between gap-2">
+                    <span className="font-mono text-base font-extrabold text-slate-900">
                       {fmtIdr(inv.totalIdr)}
-                    </td>
-                    <td className="px-4 py-2 whitespace-nowrap">
+                    </span>
+                    <span className="text-xs text-slate-500">
                       {inv.dueDate ? (
                         <>
-                          {fmtDate(inv.dueDate)}
+                          Due {fmtDate(inv.dueDate)}
                           <DueBadge inv={inv} />
                         </>
                       ) : (
-                        "—"
+                        "Due —"
                       )}
-                    </td>
-                    <td className="relative px-4 py-2">
-                      <button
-                        onClick={() =>
-                          setStatusMenuId((cur) =>
-                            cur === inv.id ? null : inv.id
-                          )
-                        }
-                        disabled={savingStatusId === inv.id}
-                        title="Change payment status"
-                        className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium transition-colors disabled:opacity-60 ${
-                          inv.status === "paid"
-                            ? "bg-green-100 text-green-700 hover:bg-green-200"
-                            : "bg-amber-100 text-amber-700 hover:bg-amber-200"
-                        }`}
-                      >
-                        <span
-                          className={`h-1.5 w-1.5 rounded-full ${
-                            inv.status === "paid"
-                              ? "bg-green-500"
-                              : "bg-amber-500"
-                          }`}
-                        />
-                        {savingStatusId === inv.id
-                          ? "Saving…"
-                          : inv.status === "paid"
-                            ? "Paid"
-                            : "Unpaid"}
-                        <svg
-                          className="h-3 w-3 opacity-60"
-                          viewBox="0 0 20 20"
-                          fill="currentColor"
-                        >
-                          <path
-                            fillRule="evenodd"
-                            d="M5.23 7.21a.75.75 0 0 1 1.06.02L10 11.17l3.71-3.94a.75.75 0 1 1 1.08 1.04l-4.25 4.5a.75.75 0 0 1-1.08 0l-4.25-4.5a.75.75 0 0 1 .02-1.06Z"
-                            clipRule="evenodd"
-                          />
-                        </svg>
-                      </button>
-                      {statusMenuId === inv.id && (
-                        <>
-                          <div
-                            className="fixed inset-0 z-10"
-                            onClick={() => setStatusMenuId(null)}
-                          />
-                          <div className="absolute left-2 z-20 mt-1 w-44 overflow-hidden rounded-lg border border-gray-200 bg-white py-1 shadow-lg">
-                            {(
-                              [
-                                ["paid", "Paid", "bg-green-500", "Pembayaran diterima"],
-                                ["unpaid", "Unpaid", "bg-amber-500", "Belum dibayar"],
-                              ] as const
-                            ).map(([value, label, dot, desc]) => (
-                              <button
-                                key={value}
-                                onClick={() => setStatus(inv, value)}
-                                className="flex w-full items-center gap-2 px-3 py-2 text-left text-xs hover:bg-gray-50"
-                              >
-                                <span
-                                  className={`h-2 w-2 shrink-0 rounded-full ${dot}`}
-                                />
-                                <span className="flex-1">
-                                  <span className="block font-medium text-gray-700">
-                                    {label}
-                                  </span>
-                                  <span className="block text-gray-400">
-                                    {desc}
-                                  </span>
-                                </span>
-                                {inv.status === value && (
-                                  <svg
-                                    className="h-3.5 w-3.5 text-blue-600"
-                                    viewBox="0 0 20 20"
-                                    fill="currentColor"
-                                  >
-                                    <path
-                                      fillRule="evenodd"
-                                      d="M16.7 5.3a1 1 0 0 1 0 1.4l-7.5 7.5a1 1 0 0 1-1.4 0l-3.5-3.5a1 1 0 1 1 1.4-1.4l2.8 2.79 6.8-6.8a1 1 0 0 1 1.4 0Z"
-                                      clipRule="evenodd"
-                                    />
-                                  </svg>
-                                )}
-                              </button>
-                            ))}
-                          </div>
-                        </>
-                      )}
-                    </td>
-                    <td className="px-4 py-2 text-right whitespace-nowrap">
-                      <Link
-                        href={`/invoices/${inv.id}?print=1`}
-                        className="rounded px-2 py-1 text-xs text-gray-600 hover:bg-gray-100"
-                      >
-                        Print
-                      </Link>
-                      <button
-                        onClick={() => remove(inv.id, inv.invoiceNo)}
-                        className="rounded px-2 py-1 text-xs text-red-500 hover:bg-red-50"
-                      >
-                        Delete
-                      </button>
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
+                    </span>
+                  </div>
+                  <div className="mt-2 flex justify-end gap-1 border-t border-slate-100 pt-2">
+                    <Link
+                      href={`/invoices/${inv.id}?print=1`}
+                      className="rounded px-2 py-1 text-xs font-bold text-slate-600 hover:bg-slate-100"
+                    >
+                      Print
+                    </Link>
+                    <button
+                      onClick={() => remove(inv.id, inv.invoiceNo)}
+                      className="rounded px-2 py-1 text-xs font-bold text-rose-500 hover:bg-rose-50"
+                    >
+                      Delete
+                    </button>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
         </div>
-      </main>
+
+        {/* Footer */}
+        <div className="flex items-center justify-between rounded-b-xl border-t border-slate-200 bg-white px-6 py-4">
+          <p className="text-sm font-medium text-slate-500">
+            Showing{" "}
+            <span className="font-bold text-slate-900">{sorted.length}</span> of{" "}
+            <span className="font-bold text-slate-900">{invoices.length}</span>{" "}
+            invoices
+          </p>
+        </div>
+      </div>
+
       <GuidedTour />
-    </div>
+    </AppShell>
+  );
+}
+
+// useSearchParams requires a Suspense boundary for prerendering.
+export default function HomePage() {
+  return (
+    <Suspense>
+      <HomeInner />
+    </Suspense>
   );
 }

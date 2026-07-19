@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
+import AppShell from "@/components/AppShell";
 
 interface UserRow {
   id: number;
@@ -67,20 +67,12 @@ export default function UsersPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-100">
-      <header className="border-b border-gray-200 bg-white px-6 py-4 shadow-sm">
-        <div className="mx-auto flex max-w-3xl items-center justify-between">
-          <h1 className="text-lg font-bold text-gray-800">Team Users</h1>
-          <Link
-            href="/"
-            className="rounded px-3 py-1.5 text-sm text-gray-600 hover:bg-gray-100"
-          >
-            ← Invoices
-          </Link>
-        </div>
-      </header>
-
-      <main className="mx-auto max-w-3xl space-y-6 p-6">
+    <AppShell
+      active="users"
+      title="Team Users"
+      subtitle="Kelola akun tim — setiap orang sebaiknya punya akun sendiri."
+    >
+      <div className="mx-auto max-w-3xl space-y-6">
         {error && (
           <div className="rounded bg-red-50 px-3 py-2 text-sm text-red-600">
             {error}
@@ -178,7 +170,7 @@ export default function UsersPage() {
           Passwords are stored hashed (bcrypt). To change someone&apos;s
           password, remove the user and add them again.
         </p>
-      </main>
-    </div>
+      </div>
+    </AppShell>
   );
 }

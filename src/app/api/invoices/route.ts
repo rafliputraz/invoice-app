@@ -15,7 +15,8 @@ export async function GET() {
               customer_name AS customerName, total_idr AS totalIdr,
               created_at AS createdAt, created_by AS createdBy,
               seq, year, status, due_date AS dueDate
-       FROM invoices ORDER BY year DESC, seq DESC`
+       FROM invoices WHERE deleted_at IS NULL
+       ORDER BY year DESC, seq DESC`
     )
     .all();
   return NextResponse.json(rows);

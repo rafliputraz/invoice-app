@@ -20,18 +20,23 @@ const STEPS: TourStep[] = [
   },
   {
     target: '[data-tour="filters"]',
-    title: "Cari & saring",
-    body: "Ketik nomor invoice atau nama customer untuk mencari. Dropdown di kanan menyaring per bulan dan per status — pilih “Overdue” untuk melihat semua tagihan yang telat sekaligus.",
+    title: "Cari, saring & export",
+    body: "Ketik nomor invoice atau nama customer untuk mencari. Tab di atas tabel menyaring status (All / Unpaid / Overdue / Paid), dropdown memilih bulan, dan tombol Export mengunduh rekap CSV (bisa dibuka di Excel) sesuai filter yang aktif.",
   },
   {
     target: '[data-tour="table"]',
     title: "Daftar invoice",
-    body: "Klik nomor invoice untuk membuka & mengedit. Kolom Due menunjukkan jatuh tempo beserta umurnya (merah = telat). Klik badge Status untuk menandai Paid saat pembayaran masuk. Judul kolom bisa diklik untuk mengurutkan.",
+    body: "Klik nomor invoice untuk membuka & mengedit. Kolom Due menunjukkan jatuh tempo (merah = telat). Klik badge Status untuk menandai Paid saat pembayaran masuk. Delete memindahkan ke Trash, tidak langsung hilang.",
+  },
+  {
+    target: '[data-tour="customers"]',
+    title: "Data customer",
+    body: "Rekap tagihan per customer (siapa yang paling banyak nunggak) sekaligus tempat menyimpan data customer — nama, alamat, Tax ID — supaya saat membuat invoice tinggal pilih dari dropdown.",
   },
   {
     target: '[data-tour="new-invoice"]',
     title: "Buat invoice baru",
-    body: "Mulai dari sini. Nomor invoice terisi otomatis; isi data customer, rincian biaya, dan termin pembayaran (kosongkan jika customer bayar langsung).",
+    body: "Mulai dari sini. Nomor invoice terisi otomatis; pilih customer tersimpan dari dropdown (atau isi manual), lengkapi rincian biaya dan termin pembayaran (kosongkan jika customer bayar langsung).",
   },
   {
     target: '[data-tour="help"]',
@@ -62,7 +67,9 @@ export default function GuidedTour() {
   useEffect(() => {
     if (step === null) return;
     const el = document.querySelector(STEPS[step].target);
-    if (!el) {
+    // Skip steps whose target is missing or hidden (e.g. sidebar on mobile).
+    const r = el?.getBoundingClientRect();
+    if (!el || !r || (r.width === 0 && r.height === 0)) {
       setStep((s) =>
         s !== null && s + 1 < STEPS.length ? s + 1 : null
       );

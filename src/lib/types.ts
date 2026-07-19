@@ -71,6 +71,14 @@ export interface InvoiceData {
 
 export type InvoiceStatus = "paid" | "unpaid";
 
+/** Saved customer master data, used to prefill the invoice form. */
+export interface CustomerMaster {
+  id: number;
+  name: string;
+  addressLines: string[];
+  taxId: string;
+}
+
 export interface InvoiceListItem {
   id: number;
   invoiceNo: string;

@@ -29,6 +29,14 @@ function createDb(): Database.Database {
       role TEXT NOT NULL DEFAULT 'member',
       created_at TEXT NOT NULL DEFAULT (datetime('now', 'localtime'))
     );
+    CREATE TABLE IF NOT EXISTS customers (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      name TEXT NOT NULL UNIQUE,
+      address_lines TEXT NOT NULL DEFAULT '[]',
+      tax_id TEXT NOT NULL DEFAULT '',
+      created_at TEXT NOT NULL DEFAULT (datetime('now', 'localtime')),
+      updated_at TEXT
+    );
   `);
 
   // Migration: track which user created each invoice.
@@ -50,6 +58,13 @@ function createDb(): Database.Database {
   // Migration: payment due date (invoice_date + payment term days).
   try {
     db.exec("ALTER TABLE invoices ADD COLUMN due_date TEXT");
+  } catch {
+    // column already exists
+  }
+
+  // Migration: soft delete (recycle bin) — NULL means the invoice is live.
+  try {
+    db.exec("ALTER TABLE invoices ADD COLUMN deleted_at TEXT");
   } catch {
     // column already exists
   }
@@ -80,7 +95,12 @@ export function getDb(): Database.Database {
   return globalForDb.__sflDb;
 }
 
-/** Next free sequence number for a given 2-digit year (resets each year). */
+/**
+ * Next free sequence number for a given 2-digit year (resets each year).
+ * Intentionally counts soft-deleted rows too: trashed invoices keep their
+ * number, so numbers are never reused and restore can't hit the UNIQUE
+ * invoice_no constraint.
+ */
 export function nextSeq(db: Database.Database, year: number): number {
   const row = db
     .prepare("SELECT MAX(seq) AS maxSeq FROM invoices WHERE year = ?")
