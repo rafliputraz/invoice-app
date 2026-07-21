@@ -405,3 +405,12 @@
  GET /api/invoices 200 in 306ms
  GET /api/auth/me 200 in 310ms
  GET /api/auth/me 200 in 314ms
+ PATCH /api/invoices/35 200 in 308ms
+ PATCH /api/invoices/35 200 in 299ms
+ GET /api/auth/me 200 in 318ms
+ GET /api/auth/me 200 in 305ms
+ GET /api/auth/me 200 in 307ms
+ GET /api/auth/me 200 in 302ms
+ GET /api/auth/me 200 in 316ms
+ GET /api/auth/me 200 in 293ms
+ GET /api/auth/me 200 in 304ms

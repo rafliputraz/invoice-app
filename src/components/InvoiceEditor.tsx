@@ -53,7 +53,7 @@ export default function InvoiceEditor({
     if (!el) return;
     setDownloading(true);
     try {
-      await downloadInvoicePdf(el, invoicePdfName(data.invoiceNo));
+      await downloadInvoicePdf(el, "Inv " + invoicePdfName(data.invoiceNo));
     } catch (err) {
       setSavedMsg(err instanceof Error ? err.message : "Download failed");
     } finally {
