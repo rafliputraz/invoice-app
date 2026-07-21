@@ -77,7 +77,7 @@ function StatCard({
         </span>
       </div>
       <div className="relative z-10">
-        <h3 className={`font-mono text-2xl font-extrabold tracking-tight ${valueCls}`}>
+        <h3 className={`text-2xl font-extrabold tracking-tight ${valueCls}`}>
           {value}
         </h3>
         {sub && (

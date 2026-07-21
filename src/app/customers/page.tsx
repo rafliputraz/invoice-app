@@ -232,28 +232,28 @@ export default function CustomersPage() {
                       </span>
                     </td>
                     <td className="px-6 py-4 text-right">
-                      <span className="font-mono text-sm font-bold text-slate-900">
+                      <span className="text-sm font-bold text-slate-900">
                         {fmtIdr(row.totalIdr)}
                       </span>
                     </td>
                     <td className="px-6 py-4 text-right">
                       {row.outstandingIdr > 0 ? (
-                        <span className="inline-flex items-center rounded border border-amber-100 bg-amber-50 px-2.5 py-0.5 font-mono text-sm font-bold text-amber-600">
+                        <span className="inline-flex items-center rounded border border-amber-100 bg-amber-50 px-2.5 py-0.5 text-sm font-bold text-amber-600">
                           {fmtIdr(row.outstandingIdr)}
                         </span>
                       ) : (
-                        <span className="font-mono text-sm font-medium text-slate-400">
+                        <span className="text-sm font-medium text-slate-400">
                           0
                         </span>
                       )}
                     </td>
                     <td className="px-6 py-4 text-right">
                       {row.overdueIdr > 0 ? (
-                        <span className="inline-flex items-center rounded border border-rose-100 bg-rose-50 px-2.5 py-0.5 font-mono text-sm font-bold text-rose-600">
+                        <span className="inline-flex items-center rounded border border-rose-100 bg-rose-50 px-2.5 py-0.5 text-sm font-bold text-rose-600">
                           {fmtIdr(row.overdueIdr)}
                         </span>
                       ) : (
-                        <span className="font-mono text-sm font-medium text-slate-400">
+                        <span className="text-sm font-medium text-slate-400">
                           0
                         </span>
                       )}

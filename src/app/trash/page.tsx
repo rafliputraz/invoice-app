@@ -102,18 +102,18 @@ export default function TrashPage() {
               ) : (
                 rows.map((row) => (
                   <tr key={row.id} className="hover:bg-blue-50/40">
-                    <td className="px-4 py-2 font-mono">
+                    <td className="px-4 py-2">
                       <Link
                         href={`/invoices/${row.id}`}
-                        className="text-blue-600 hover:underline"
+                        className="font-bold text-blue-600 hover:underline"
                       >
                         {row.invoiceNo}
                       </Link>
                     </td>
                     <td className="px-4 py-2">{fmtDate(row.invoiceDate)}</td>
                     <td className="px-4 py-2">{row.customerName}</td>
-                    <td className="px-4 py-2 text-right font-mono">
-                      {fmtIdr(row.totalIdr)}
+                    <td className="px-4 py-2 text-right font-semibold">
+                      Rp {fmtIdr(row.totalIdr)}
                     </td>
                     <td className="px-4 py-2 text-xs text-gray-500">
                       {row.deletedAt}

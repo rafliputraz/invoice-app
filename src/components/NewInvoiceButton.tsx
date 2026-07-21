@@ -243,7 +243,7 @@ export default function NewInvoiceButton() {
                             className="flex w-full items-center justify-between gap-3 rounded-lg px-3 py-2 text-left transition-colors hover:bg-blue-50"
                           >
                             <span className="min-w-0">
-                              <span className="block truncate font-mono text-sm font-semibold text-slate-900">
+                              <span className="block truncate text-sm font-semibold text-slate-900">
                                 {iv.invoiceNo}
                               </span>
                               <span className="block truncate text-xs text-slate-500">
