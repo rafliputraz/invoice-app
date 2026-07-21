@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getDb } from "@/lib/db";
+import { getDb, nextSeq } from "@/lib/db";
 import { getSessionUser } from "@/lib/auth-server";
 import { computeTotals } from "@/lib/calc";
-import { dueDateOf } from "@/lib/invoice-number";
+import { dueDateOf, yearOf } from "@/lib/invoice-number";
 import type { InvoiceData } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
@@ -23,7 +23,12 @@ export async function GET(_req: NextRequest, { params }: Params) {
 
 export async function PUT(req: NextRequest, { params }: Params) {
   const { id } = await params;
-  const data = (await req.json()) as InvoiceData;
+  const body = (await req.json()) as InvoiceData & { manualInvoiceNo?: boolean };
+  // Strip the transient flag so it never lands in the stored JSON.
+  const manual = body.manualInvoiceNo === true;
+  const data: InvoiceData = { ...body };
+  delete (data as Partial<{ manualInvoiceNo: boolean }>).manualInvoiceNo;
+
   const db = getDb();
   const existing = db
     .prepare(
@@ -33,23 +38,72 @@ export async function PUT(req: NextRequest, { params }: Params) {
   if (!existing) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
-  // The invoice number is immutable once assigned — keeps numbering gap-free.
-  const saved: InvoiceData = { ...data, invoiceNo: existing.invoiceNo };
+
+  // By default the number is immutable. Manual mode lets it change (correcting a
+  // backfilled/old invoice), guarded by the same uniqueness rule as creation.
+  const wantsNo = data.invoiceNo?.trim() ?? "";
+  if (manual && wantsNo === "") {
+    return NextResponse.json(
+      { error: "Nomor invoice manual tidak boleh kosong" },
+      { status: 400 }
+    );
+  }
+  const changingNo = manual && wantsNo !== existing.invoiceNo;
+  if (changingNo) {
+    const clash = db
+      .prepare("SELECT 1 FROM invoices WHERE invoice_no = ? AND id != ?")
+      .get(wantsNo, Number(id));
+    if (clash) {
+      return NextResponse.json(
+        { error: `Nomor invoice "${wantsNo}" sudah dipakai` },
+        { status: 409 }
+      );
+    }
+  }
+
+  const invoiceNo = changingNo ? wantsNo : existing.invoiceNo;
+  const saved: InvoiceData = { ...data, invoiceNo };
   const { total } = computeTotals(saved);
-  db.prepare(
-    `UPDATE invoices
-     SET invoice_date = ?, customer_name = ?, total_idr = ?, data = ?,
-         due_date = ?, updated_at = datetime('now', 'localtime')
-     WHERE id = ?`
-  ).run(
-    saved.invoiceDate,
-    saved.invoiceTo.name,
-    total,
-    JSON.stringify(saved),
-    dueDateOf(saved.invoiceDate, saved.dueDays),
-    Number(id)
-  );
-  return NextResponse.json({ id: Number(id), invoiceNo: existing.invoiceNo });
+
+  if (changingNo) {
+    // Keep seq/year meaningful for ordering and future auto-numbers: reuse the
+    // number's leading digits, falling back to the next free seq for the year.
+    const year = yearOf(saved.invoiceDate);
+    const parsed = parseInt(invoiceNo, 10);
+    const seq =
+      Number.isFinite(parsed) && parsed > 0 ? parsed : nextSeq(db, year);
+    db.prepare(
+      `UPDATE invoices
+       SET invoice_no = ?, seq = ?, year = ?, invoice_date = ?, customer_name = ?,
+           total_idr = ?, data = ?, due_date = ?, updated_at = datetime('now', 'localtime')
+       WHERE id = ?`
+    ).run(
+      invoiceNo,
+      seq,
+      year,
+      saved.invoiceDate,
+      saved.invoiceTo.name,
+      total,
+      JSON.stringify(saved),
+      dueDateOf(saved.invoiceDate, saved.dueDays),
+      Number(id)
+    );
+  } else {
+    db.prepare(
+      `UPDATE invoices
+       SET invoice_date = ?, customer_name = ?, total_idr = ?, data = ?,
+           due_date = ?, updated_at = datetime('now', 'localtime')
+       WHERE id = ?`
+    ).run(
+      saved.invoiceDate,
+      saved.invoiceTo.name,
+      total,
+      JSON.stringify(saved),
+      dueDateOf(saved.invoiceDate, saved.dueDays),
+      Number(id)
+    );
+  }
+  return NextResponse.json({ id: Number(id), invoiceNo });
 }
 
 export async function PATCH(req: NextRequest, { params }: Params) {

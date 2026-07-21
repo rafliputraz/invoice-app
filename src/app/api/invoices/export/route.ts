@@ -34,7 +34,7 @@ export async function GET(req: NextRequest) {
       `SELECT invoice_no, invoice_date, customer_name, total_idr, status,
               due_date, created_by
        FROM invoices WHERE ${where.join(" AND ")}
-       ORDER BY year DESC, seq DESC`
+       ORDER BY invoice_date DESC, created_at DESC, id DESC`
     )
     .all(...args) as {
     invoice_no: string;

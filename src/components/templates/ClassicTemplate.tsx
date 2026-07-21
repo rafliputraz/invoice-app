@@ -9,6 +9,7 @@ import { LabeledLine, invoiceComputed } from "./shared";
 /** Faithful replica of the original SFL paper template. */
 export default function ClassicTemplate({ data }: { data: InvoiceData }) {
   const { totals, visibleItems, perCurrency, signer } = invoiceComputed(data);
+  const showUsd = data.usesUsd ?? true;
 
   return (
     <div
@@ -130,9 +131,11 @@ export default function ClassicTemplate({ data }: { data: InvoiceData }) {
       {/* ===== Exchange rate + totals ===== */}
       <div className="flex border-b border-black">
         <div className="flex-1 px-3 py-1">
-          <div>
-            Exch Rate : IDR {fmtNum(data.exchangeRate)} / USD 1
-          </div>
+          {showUsd && (
+            <div>
+              Exch Rate : IDR {fmtNum(data.exchangeRate)} / USD 1
+            </div>
+          )}
           <div>
             Payment terms : <span className="font-bold italic">{data.paymentTerms}</span>
           </div>
@@ -205,10 +208,14 @@ export default function ClassicTemplate({ data }: { data: InvoiceData }) {
           <div>{data.bankIdr.bank}</div>
           <div>acc no : {data.bankIdr.accNo}</div>
           <div>acc name : {data.bankIdr.accName}</div>
-          <div className="mt-3 italic font-bold">USD Currency</div>
-          <div>{data.bankUsd.bank}</div>
-          <div>acc no : {data.bankUsd.accNo}</div>
-          <div>acc name : {data.bankUsd.accName}</div>
+          {showUsd && (
+            <>
+              <div className="mt-3 italic font-bold">USD Currency</div>
+              <div>{data.bankUsd.bank}</div>
+              <div>acc no : {data.bankUsd.accNo}</div>
+              <div>acc name : {data.bankUsd.accName}</div>
+            </>
+          )}
         </div>
         <div className="flex w-[40%] shrink-0 flex-col items-center justify-between pt-1">
           <div className="font-bold">Best Regards</div>

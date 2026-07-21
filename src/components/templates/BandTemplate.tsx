@@ -9,6 +9,7 @@ import { invoiceComputed } from "./shared";
 /** Bold red brand band header with strong totals box. */
 export default function BandTemplate({ data }: { data: InvoiceData }) {
   const { totals, visibleItems, perCurrency, signer } = invoiceComputed(data);
+  const showUsd = data.usesUsd ?? true;
 
   return (
     <div
@@ -135,10 +136,12 @@ export default function BandTemplate({ data }: { data: InvoiceData }) {
       {/* ===== Rates + totals ===== */}
       <div className="flex items-start justify-between px-[8mm] pt-4">
         <div className="text-[8.5pt] text-neutral-600">
-          <div>
-            <span className="font-semibold">Exch Rate :</span> IDR{" "}
-            {fmtNum(data.exchangeRate)} / USD 1
-          </div>
+          {showUsd && (
+            <div>
+              <span className="font-semibold">Exch Rate :</span> IDR{" "}
+              {fmtNum(data.exchangeRate)} / USD 1
+            </div>
+          )}
           <div>
             <span className="font-semibold">Payment terms :</span>{" "}
             <span className="font-bold italic">{data.paymentTerms}</span>
@@ -183,7 +186,9 @@ export default function BandTemplate({ data }: { data: InvoiceData }) {
               ["IDR Currency", data.bankIdr],
               ["USD Currency", data.bankUsd],
             ] as const
-          ).map(([label, bank]) => (
+          )
+            .filter(([label]) => showUsd || label !== "USD Currency")
+            .map(([label, bank]) => (
             <div key={label} className="mb-2">
               <span className="font-bold italic">{label}</span> — {bank.bank}
               <div className="text-neutral-600">

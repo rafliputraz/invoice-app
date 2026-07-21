@@ -14,10 +14,13 @@ export default function InvoiceEditor({
   invoiceId,
   initialData,
   autoPrint,
+  addendum = false,
 }: {
   invoiceId?: number;
   initialData?: InvoiceData;
   autoPrint?: boolean;
+  /** Addendum on an existing B/L: number is a read-only suffix, saved as manual. */
+  addendum?: boolean;
 }) {
   const router = useRouter();
   const [data, setDataState] = useState<InvoiceData>(
@@ -26,7 +29,24 @@ export default function InvoiceEditor({
   const [saving, setSaving] = useState(false);
   const [savedMsg, setSavedMsg] = useState("");
   const [downloading, setDownloading] = useState(false);
+  // manualNo lets the user type an old/backlog number; addendum (a prop, set by
+  // the New Invoice chooser) carries a read-only auto-suffixed number. Either
+  // way the number is user-set/derived rather than auto-generated.
+  const [manualNo, setManualNo] = useState(false);
+  const [numberTaken, setNumberTaken] = useState(false);
   const isNew = invoiceId === undefined;
+
+  const customNumber = manualNo || addendum;
+
+  // Inline validation shown under the Invoice No field.
+  const trimmedNo = data.invoiceNo.trim();
+  const numberError = !customNumber
+    ? ""
+    : !trimmedNo
+      ? "Nomor invoice tidak boleh kosong"
+      : numberTaken
+        ? `Nomor invoice "${trimmedNo}" sudah dipakai`
+        : "";
 
   const download = async () => {
     const el = document.getElementById("invoice-print");
@@ -47,8 +67,9 @@ export default function InvoiceEditor({
   );
 
   // For new invoices, keep the auto number preview in sync with the date.
+  // Skipped in manual mode so we don't clobber a number the user typed.
   useEffect(() => {
-    if (!isNew || !data.invoiceDate) return;
+    if (!isNew || customNumber || !data.invoiceDate) return;
     const ctrl = new AbortController();
     fetch(`/api/invoices/next-number?date=${data.invoiceDate}`, {
       signal: ctrl.signal,
@@ -59,7 +80,31 @@ export default function InvoiceEditor({
       )
       .catch(() => {});
     return () => ctrl.abort();
-  }, [isNew, data.invoiceDate]);
+  }, [isNew, customNumber, data.invoiceDate]);
+
+  // Live duplicate check for the manual number, so the clash shows under the
+  // field as the user types instead of only after a rejected save.
+  useEffect(() => {
+    if (!customNumber || !data.invoiceNo.trim()) {
+      setNumberTaken(false);
+      return;
+    }
+    const ctrl = new AbortController();
+    const t = setTimeout(() => {
+      const params = new URLSearchParams({ no: data.invoiceNo.trim() });
+      if (!isNew && invoiceId !== undefined) {
+        params.set("excludeId", String(invoiceId));
+      }
+      fetch(`/api/invoices/check-number?${params}`, { signal: ctrl.signal })
+        .then((r) => r.json())
+        .then((res: { taken: boolean }) => setNumberTaken(res.taken))
+        .catch(() => {});
+    }, 350);
+    return () => {
+      ctrl.abort();
+      clearTimeout(t);
+    };
+  }, [customNumber, data.invoiceNo, isNew, invoiceId]);
 
   // Quick-print entry from the list: open the dialog once the preview painted.
   useEffect(() => {
@@ -69,6 +114,10 @@ export default function InvoiceEditor({
   }, [autoPrint]);
 
   const save = async () => {
+    if (numberError) {
+      setSavedMsg(numberError);
+      return;
+    }
     setSaving(true);
     setSavedMsg("");
     try {
@@ -77,10 +126,18 @@ export default function InvoiceEditor({
         {
           method: isNew ? "POST" : "PUT",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(data),
+          body: JSON.stringify(
+            customNumber ? { ...data, manualInvoiceNo: true } : data
+          ),
         }
       );
-      if (!res.ok) throw new Error(`Save failed (${res.status})`);
+      if (!res.ok) {
+        const msg = await res
+          .json()
+          .then((b: { error?: string }) => b.error)
+          .catch(() => null);
+        throw new Error(msg || `Save failed (${res.status})`);
+      }
       const saved: { id: number; invoiceNo: string } = await res.json();
       setDataState((prev) => ({ ...prev, invoiceNo: saved.invoiceNo }));
       setSavedMsg(`Saved as ${saved.invoiceNo}`);
@@ -170,7 +227,8 @@ export default function InvoiceEditor({
           </button>
           <button
             onClick={save}
-            disabled={saving}
+            disabled={saving || !!numberError}
+            title={numberError || undefined}
             className="rounded-lg bg-blue-600 px-5 py-1.5 text-sm font-semibold text-white shadow-md shadow-blue-500/20 transition-all hover:bg-blue-700 disabled:opacity-50"
           >
             {saving ? "Saving…" : isNew ? "Save" : "Save Changes"}
@@ -190,7 +248,15 @@ export default function InvoiceEditor({
             </p>
           </div>
           <div className="flex-1 overflow-y-auto bg-slate-50/30 p-4">
-            <InvoiceForm data={data} setData={setData} />
+            <InvoiceForm
+              data={data}
+              setData={setData}
+              manualNo={manualNo}
+              setManualNo={setManualNo}
+              isNew={isNew}
+              numberError={numberError}
+              addendum={addendum}
+            />
             <div className="h-8" />
           </div>
         </aside>

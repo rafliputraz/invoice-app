@@ -1,0 +1,252 @@
+
+> invoice-app@0.1.0 dev
+> next dev --turbopack
+
+   ▲ Next.js 15.5.20 (Turbopack)
+   - Local:        http://localhost:3000
+   - Network:      http://172.24.192.1:3000
+   - Environments: .env
+
+ ✓ Starting...
+ ✓ Compiled middleware in 144ms
+ ✓ Ready in 1902ms
+ ○ Compiling /api/auth/me ...
+ ✓ Compiled /api/auth/me in 1325ms
+ GET /api/auth/me 200 in 1771ms
+ ○ Compiling /invoices/new ...
+ ✓ Compiled /invoices/new in 2.6s
+ GET /invoices/new 200 in 3138ms
+ ✓ Compiled /icon.png in 198ms
+ GET /icon.png?icon.8057f304.png 200 in 445ms
+ GET /api/customers/master 200 in 452ms
+ GET /api/invoices/next-number?date=2026-07-21 200 in 482ms
+ ✓ Compiled / in 320ms
+ GET / 200 in 402ms
+ ✓ Compiled /api/invoices in 118ms
+ GET /api/auth/me 200 in 314ms
+ GET /api/invoices 200 in 411ms
+ GET /api/auth/me 200 in 338ms
+ GET /api/invoices 200 in 294ms
+ GET /api/auth/me 200 in 294ms
+ GET /api/auth/me 200 in 301ms
+ GET /api/invoices 200 in 309ms
+ GET /api/auth/me 200 in 301ms
+ ✓ Compiled in 99ms
+ ✓ Compiled in 86ms
+ ✓ Compiled in 91ms
+ ✓ Compiled in 78ms
+ GET /api/auth/me 200 in 315ms
+ GET /api/auth/me 200 in 307ms
+ GET / 200 in 434ms
+ GET /icon.png?icon.8057f304.png 200 in 304ms
+ GET /api/invoices 200 in 342ms
+ GET /api/auth/me 200 in 345ms
+ GET /api/auth/me 200 in 308ms
+ GET /invoices/new 200 in 122ms
+ GET /api/invoices/next-number?date=2026-07-21 200 in 318ms
+ GET /api/customers/master 200 in 326ms
+ GET /api/customers/master 200 in 300ms
+ GET / 200 in 109ms
+ GET /api/invoices 200 in 314ms
+ GET /api/auth/me 200 in 320ms
+ GET /api/invoices 200 in 315ms
+ GET /api/auth/me 200 in 324ms
+ GET /api/auth/me 200 in 296ms
+ GET /api/auth/me 200 in 304ms
+ GET /api/invoices 200 in 279ms
+ GET /invoices/new?addendum=32 200 in 135ms
+ GET /api/customers/master 200 in 283ms
+ ✓ Compiled /api/invoices/check-number in 107ms
+ GET /api/customers/master 200 in 288ms
+ GET /api/invoices/check-number?no=028A%2FVII%2FSFL%2F26 200 in 380ms
+ POST /api/invoices 201 in 313ms
+ ✓ Compiled /invoices/[id] in 352ms
+ GET /invoices/34 200 in 1091ms
+ GET /api/customers/master 200 in 300ms
+ GET /api/customers/master 200 in 289ms
+ GET / 200 in 95ms
+ GET /api/invoices 200 in 312ms
+ GET /api/auth/me 200 in 318ms
+ GET /api/invoices 200 in 326ms
+ GET /api/auth/me 200 in 336ms
+ GET /api/auth/me 200 in 304ms
+ GET /api/auth/me 200 in 305ms
+ GET /api/invoices 200 in 294ms
+ GET /invoices/new?addendum=33 200 in 121ms
+ GET /api/customers/master 200 in 302ms
+ GET /api/customers/master 200 in 305ms
+ GET /api/invoices/check-number?no=029A%2FVII%2FSFL%2F26 200 in 306ms
+ POST /api/invoices 201 in 309ms
+ GET /invoices/35 200 in 123ms
+ GET /api/customers/master 200 in 298ms
+ GET /api/customers/master 200 in 289ms
+ GET / 200 in 95ms
+ GET /api/invoices 200 in 313ms
+ GET /api/auth/me 200 in 320ms
+ GET /api/invoices 200 in 327ms
+ GET /api/auth/me 200 in 336ms
+ GET /api/auth/me 200 in 308ms
+ GET /api/auth/me 200 in 294ms
+ GET / 200 in 185ms
+ GET /icon.png?icon.8057f304.png 200 in 374ms
+ GET /api/invoices 200 in 354ms
+ GET /api/auth/me 200 in 357ms
+ GET /api/auth/me 200 in 335ms
+ GET /invoices/34 200 in 127ms
+ GET /api/customers/master 200 in 311ms
+ GET /api/customers/master 200 in 287ms
+ GET / 200 in 97ms
+ GET /api/invoices 200 in 317ms
+ GET /api/auth/me 200 in 324ms
+ GET /api/invoices 200 in 313ms
+ GET /api/auth/me 200 in 323ms
+ GET /api/auth/me 200 in 306ms
+ GET /api/auth/me 200 in 306ms
+ GET /invoices/34 200 in 119ms
+ GET /api/customers/master 200 in 345ms
+ GET /api/customers/master 200 in 301ms
+ GET /api/auth/me 200 in 313ms
+ GET /api/auth/me 200 in 298ms
+ GET / 200 in 96ms
+ GET /api/invoices 200 in 314ms
+ GET /api/auth/me 200 in 327ms
+ GET /api/invoices 200 in 314ms
+ GET /api/auth/me 200 in 321ms
+ GET /api/auth/me 200 in 310ms
+ GET /api/auth/me 200 in 308ms
+ GET /api/invoices 200 in 291ms
+ GET /invoices/new?addendum=33 200 in 116ms
+ GET /api/customers/master 200 in 318ms
+ GET /api/customers/master 200 in 308ms
+ GET /api/invoices/check-number?no=029B%2FVII%2FSFL%2F26 200 in 304ms
+ GET / 200 in 94ms
+ GET /api/invoices 200 in 314ms
+ GET /api/auth/me 200 in 320ms
+ GET /api/invoices 200 in 325ms
+ GET /api/auth/me 200 in 335ms
+ GET /api/auth/me 200 in 307ms
+ GET /api/auth/me 200 in 301ms
+ GET /api/invoices 200 in 292ms
+ GET /invoices/new?addendum=35 200 in 104ms
+ GET /api/customers/master 200 in 282ms
+ GET /api/customers/master 200 in 304ms
+ GET /api/invoices/check-number?no=029B%2FVII%2FSFL%2F26 200 in 297ms
+ GET / 200 in 102ms
+ GET /api/invoices 200 in 314ms
+ GET /api/auth/me 200 in 323ms
+ GET /api/invoices 200 in 310ms
+ GET /api/auth/me 200 in 319ms
+ GET /api/auth/me 200 in 306ms
+ GET /api/auth/me 200 in 308ms
+ GET /api/auth/me 200 in 318ms
+ GET /api/auth/me 200 in 296ms
+ GET /api/auth/me 200 in 314ms
+ GET /api/auth/me 200 in 335ms
+ GET /api/auth/me 200 in 302ms
+ GET /api/auth/me 200 in 313ms
+ GET /api/auth/me 200 in 318ms
+ ✓ Compiled /api/auth/logout in 118ms
+ POST /api/auth/logout 200 in 409ms
+ ✓ Compiled /login in 211ms
+ GET /login 200 in 283ms
+ GET /login 200 in 113ms
+ ✓ Compiled /api/auth/login in 122ms
+ POST /api/auth/login 200 in 505ms
+ GET / 200 in 107ms
+ GET / 200 in 89ms
+ GET /api/invoices 200 in 330ms
+ GET /api/auth/me 200 in 338ms
+ GET /api/invoices 200 in 314ms
+ GET /api/auth/me 200 in 326ms
+ GET /api/auth/me 200 in 304ms
+ GET /api/auth/me 200 in 339ms
+ GET /api/auth/me 200 in 292ms
+ GET /api/auth/me 200 in 297ms
+ GET /api/auth/me 200 in 315ms
+ GET /api/auth/me 200 in 291ms
+ GET /api/auth/me 200 in 301ms
+ GET /api/auth/me 200 in 292ms
+ POST /api/auth/logout 200 in 304ms
+ GET /login 200 in 110ms
+ GET /login 200 in 98ms
+ POST /api/auth/login 200 in 413ms
+ GET / 200 in 125ms
+ GET / 200 in 133ms
+ GET /api/invoices 200 in 432ms
+ GET /api/auth/me 200 in 441ms
+ GET /api/invoices 200 in 312ms
+ GET /api/auth/me 200 in 319ms
+ GET /api/auth/me 200 in 307ms
+ GET /api/auth/me 200 in 307ms
+ GET /api/auth/me 200 in 306ms
+ GET /api/auth/me 200 in 310ms
+ GET /api/auth/me 200 in 299ms
+ GET / 200 in 230ms
+ GET /icon.png?icon.8057f304.png 200 in 434ms
+ GET /api/invoices 200 in 464ms
+ GET /api/auth/me 200 in 468ms
+ GET /api/auth/me 200 in 314ms
+ GET /invoices/34 200 in 129ms
+ GET /api/customers/master 200 in 311ms
+ GET /api/customers/master 200 in 289ms
+ ✓ Compiled /api/invoices/[id] in 393ms
+ PUT /api/invoices/34 200 in 1505ms
+ GET / 200 in 97ms
+ GET /api/invoices 200 in 319ms
+ GET /api/auth/me 200 in 324ms
+ GET /api/invoices 200 in 330ms
+ GET /api/auth/me 200 in 341ms
+ GET /api/auth/me 200 in 292ms
+ GET /api/auth/me 200 in 303ms
+ GET /api/auth/me 200 in 306ms
+ GET /api/auth/me 200 in 307ms
+ ✓ Compiled in 99ms
+ GET /api/invoices 200 in 338ms
+ GET /api/auth/me 200 in 342ms
+ GET /api/auth/me 200 in 314ms
+ ✓ Compiled in 115ms
+ ✓ Compiled in 125ms
+ ✓ Compiled in 99ms
+ ✓ Compiled in 132ms
+ ✓ Compiled in 102ms
+ ✓ Compiled in 104ms
+ ✓ Compiled in 89ms
+ GET /api/auth/me 200 in 329ms
+ GET /api/auth/me 200 in 304ms
+ GET / 200 in 466ms
+ GET /icon.png?icon.8057f304.png 200 in 308ms
+ GET /api/invoices 200 in 326ms
+ GET /api/auth/me 200 in 329ms
+ GET /api/auth/me 200 in 311ms
+ GET /invoices/35 200 in 128ms
+ GET /api/customers/master 200 in 302ms
+ GET /api/customers/master 200 in 301ms
+ GET / 200 in 95ms
+ GET /api/invoices 200 in 317ms
+ GET /api/auth/me 200 in 324ms
+ GET /api/invoices 200 in 308ms
+ GET /api/auth/me 200 in 333ms
+ GET /api/auth/me 200 in 299ms
+ GET /api/auth/me 200 in 286ms
+ ✓ Compiled in 160ms
+ GET /api/auth/me 200 in 296ms
+ ✓ Compiled in 84ms
+ GET /api/auth/me 200 in 310ms
+ GET / 200 in 447ms
+ GET /icon.png?icon.8057f304.png 200 in 312ms
+ GET /api/invoices 200 in 320ms
+ GET /api/auth/me 200 in 323ms
+ GET /api/auth/me 200 in 312ms
+ GET / 200 in 160ms
+ GET /icon.png?icon.8057f304.png 200 in 371ms
+ GET /api/invoices 200 in 356ms
+ GET /api/auth/me 200 in 362ms
+ GET /api/auth/me 200 in 307ms
+ GET /api/auth/me 200 in 302ms
+ GET /api/auth/me 200 in 326ms
+ ✓ Compiled in 83ms
+ ✓ Compiled in 84ms
+ ✓ Compiled in 80ms
+ ✓ Compiled in 89ms
+ ✓ Compiled in 94ms
+ GET /api/auth/me 200 in 319ms

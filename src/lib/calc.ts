@@ -1,11 +1,18 @@
-import type { InvoiceData, LineItem } from "./types";
+import type { InvoiceData, LineItem, VatVariant } from "./types";
 
 /**
- * Effective VAT rate for freight forwarding invoices:
- * 10% (tax base) x 11/12 x 12% = 1.1%
- * Matches the template label "@10%*11/12*12%".
+ * The two VAT formulas an invoice can use. `label` is the exact string printed
+ * on the document; `rate` is the effective multiplier applied to the subtotal.
+ * - reduced: 10% (tax base) x 11/12 x 12% = 1.1%
+ * - full:    11/12 x 12%                  = 11%
  */
-export const VAT_RATE = 0.1 * (11 / 12) * 0.12;
+export const VAT_VARIANTS: Record<VatVariant, { rate: number; label: string }> = {
+  reduced: { rate: 0.1 * (11 / 12) * 0.12, label: "@10%*11/12*12%" },
+  full: { rate: (11 / 12) * 0.12, label: "@11/12*12%" },
+};
+
+/** Backward-compatible alias: the reduced rate old invoices assumed. */
+export const VAT_RATE = VAT_VARIANTS.reduced.rate;
 
 /** IDR amount for one line item, rounded to whole rupiah. */
 export function itemAmountIdr(item: LineItem, exchangeRate: number): number {
@@ -40,6 +47,7 @@ export function computeTotals(data: InvoiceData): Totals {
     0
   );
   // Indonesian tax convention: VAT is truncated (floored) to whole rupiah.
-  const vat = data.vatEnabled ? Math.floor(subtotal * VAT_RATE) : 0;
+  const rate = VAT_VARIANTS[data.vatVariant ?? "reduced"].rate;
+  const vat = data.vatEnabled ? Math.floor(subtotal * rate) : 0;
   return { subtotal, vat, total: subtotal + vat };
 }

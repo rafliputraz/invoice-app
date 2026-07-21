@@ -17,6 +17,7 @@ function MiniLabel({ children }: { children: React.ReactNode }) {
 /** Clean, airy layout with a red accent — modern studio look. */
 export default function ModernTemplate({ data }: { data: InvoiceData }) {
   const { totals, visibleItems, perCurrency, signer } = invoiceComputed(data);
+  const showUsd = data.usesUsd ?? true;
 
   return (
     <div
@@ -132,9 +133,11 @@ export default function ModernTemplate({ data }: { data: InvoiceData }) {
       {/* ===== Rates + totals ===== */}
       <div className="flex justify-between pt-4">
         <div className="text-[8.5pt] text-neutral-500">
-          <div>
-            Exch Rate : IDR {fmtNum(data.exchangeRate)} / USD 1
-          </div>
+          {showUsd && (
+            <div>
+              Exch Rate : IDR {fmtNum(data.exchangeRate)} / USD 1
+            </div>
+          )}
           <div>
             Payment terms :{" "}
             <span className="font-semibold text-neutral-700">
@@ -183,7 +186,9 @@ export default function ModernTemplate({ data }: { data: InvoiceData }) {
               ["IDR Currency", data.bankIdr],
               ["USD Currency", data.bankUsd],
             ] as const
-          ).map(([label, bank]) => (
+          )
+            .filter(([label]) => showUsd || label !== "USD Currency")
+            .map(([label, bank]) => (
             <div
               key={label}
               className="rounded-md border border-neutral-200 p-2.5 text-[8.5pt]"

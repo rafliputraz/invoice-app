@@ -11,11 +11,12 @@
 body {
   background: #f3f4f6;
   color: #171717;
-  font-family: Arial, Helvetica, sans-serif;
+  /* App-wide SaaS font (matches the design mockups). The printed invoice
+     templates are unaffected: each sets its own font-[Arial/Calibri,...]. */
+  font-family: var(--font-jakarta), sans-serif;
 }
 
-/* App chrome (sidebar/topbar/dashboard) uses the SaaS font; the printed
-   invoice templates intentionally keep the body font above. */
+/* Kept for portalled/standalone bits and the scoped scrollbar styles below. */
 .app-font {
   font-family: var(--font-jakarta), sans-serif;
 }

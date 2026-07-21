@@ -264,6 +264,44 @@ function HomeInner() {
     }
   };
 
+  // Pagination (client-side). Filters/sort changes jump back to page 1.
+  const PAGE_SIZE = 10;
+  const [page, setPage] = useState(1);
+  useEffect(() => {
+    setPage(1);
+  }, [q, monthFilter, statusFilter, sortKey, sortDir]);
+  const totalPages = Math.max(1, Math.ceil(sorted.length / PAGE_SIZE));
+  const curPage = Math.min(page, totalPages);
+  const paged = sorted.slice((curPage - 1) * PAGE_SIZE, curPage * PAGE_SIZE);
+
+  // Row selection for bulk actions (checkbox column).
+  const [selected, setSelected] = useState<Set<number>>(new Set());
+  const toggleSelect = (id: number) =>
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  const pageIds = paged.map((inv) => inv.id);
+  const allPageSelected =
+    pageIds.length > 0 && pageIds.every((id) => selected.has(id));
+  const toggleSelectAll = () =>
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (allPageSelected) pageIds.forEach((id) => next.delete(id));
+      else pageIds.forEach((id) => next.add(id));
+      return next;
+    });
+  const bulkTrash = async () => {
+    if (!confirm(`Pindahkan ${selected.size} invoice ke trash?`)) return;
+    await Promise.all(
+      [...selected].map((id) => fetch(`/api/invoices/${id}`, { method: "DELETE" }))
+    );
+    setSelected(new Set());
+    load();
+  };
+
   const SortableTh = ({
     label,
     k,
@@ -280,10 +318,34 @@ function HomeInner() {
     >
       <button
         onClick={() => toggleSort(k)}
-        className="cursor-pointer uppercase hover:text-slate-800"
+        className={`group inline-flex cursor-pointer items-center gap-1 uppercase transition-colors hover:text-slate-800 ${
+          sortKey === k ? "text-slate-800" : ""
+        }`}
       >
         {label}
-        {sortKey === k && (sortDir === "asc" ? " ▲" : " ▼")}
+        {sortKey === k ? (
+          <svg
+            className={`h-3.5 w-3.5 text-blue-600 transition-transform ${
+              sortDir === "asc" ? "rotate-180" : ""
+            }`}
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2.5"
+            viewBox="0 0 24 24"
+          >
+            <path strokeLinecap="round" strokeLinejoin="round" d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+          </svg>
+        ) : (
+          <svg
+            className="h-3.5 w-3.5 text-slate-300 transition-colors group-hover:text-slate-400"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            viewBox="0 0 24 24"
+          >
+            <path strokeLinecap="round" strokeLinejoin="round" d="M8 9l4-4 4 4m0 6l-4 4-4-4" />
+          </svg>
+        )}
       </button>
     </th>
   );
@@ -525,60 +587,98 @@ function HomeInner() {
           </div>
         </div>
 
+        {selected.size > 0 && (
+          <div className="flex items-center justify-between border-y border-blue-100 bg-blue-50/70 px-6 py-2.5">
+            <span className="text-sm font-semibold text-blue-700">
+              {selected.size} invoice dipilih
+            </span>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={bulkTrash}
+                className="rounded-lg border border-rose-200 bg-white px-3 py-1.5 text-xs font-bold text-rose-600 shadow-sm transition-colors hover:bg-rose-50"
+              >
+                Move to Trash
+              </button>
+              <button
+                onClick={() => setSelected(new Set())}
+                className="rounded-lg px-3 py-1.5 text-xs font-semibold text-slate-500 hover:text-slate-700"
+              >
+                Batal
+              </button>
+            </div>
+          </div>
+        )}
+
         <div data-tour="table">
           {/* Desktop table */}
           <div className="hidden overflow-x-auto md:block">
             <table className="w-full border-collapse text-left">
               <thead>
                 <tr className="border-y border-slate-200 bg-slate-50">
-                  <SortableTh label="Invoice" k="invoiceNo" />
-                  <SortableTh label="Client" k="customerName" />
-                  <th className="px-6 py-3 text-left text-xs font-bold tracking-wider text-slate-500 uppercase">
-                    By
+                  <th className="w-12 py-3 pl-6">
+                    <input
+                      type="checkbox"
+                      checked={allPageSelected}
+                      onChange={toggleSelectAll}
+                      className="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                    />
                   </th>
-                  <SortableTh label="Amount" k="totalIdr" right />
-                  <SortableTh label="Due" k="dueDate" />
+                  <SortableTh label="Invoice Details" k="invoiceNo" />
+                  <SortableTh label="Client" k="customerName" />
+                  <SortableTh label="Amount" k="totalIdr" />
                   <th className="px-6 py-3 text-left text-xs font-bold tracking-wider text-slate-500 uppercase">
                     Status
                   </th>
-                  <th className="px-6 py-3" />
+                  <th className="px-6 py-3 text-left text-xs font-bold tracking-wider text-slate-500 uppercase">
+                    Actions
+                  </th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 bg-white">
                 {loading ? (
                   <tr>
-                    <td colSpan={7} className="px-6 py-10 text-center text-slate-400">
+                    <td colSpan={6} className="px-6 py-10 text-center text-slate-400">
                       Loading…
                     </td>
                   </tr>
                 ) : sorted.length === 0 ? (
                   <tr>
-                    <td colSpan={7} className="px-6 py-10 text-center text-slate-400">
+                    <td colSpan={6} className="px-6 py-10 text-center text-slate-400">
                       {invoices.length === 0
                         ? "No invoices yet — create your first one."
                         : "No matches."}
                     </td>
                   </tr>
                 ) : (
-                  sorted.map((inv) => (
+                  paged.map((inv) => (
                     <tr
                       key={inv.id}
                       className={`group transition-colors ${
-                        isOverdue(inv)
-                          ? "bg-rose-50/40 hover:bg-rose-50/70"
-                          : "hover:bg-blue-50/30"
+                        selected.has(inv.id)
+                          ? "bg-blue-50/60"
+                          : isOverdue(inv)
+                            ? "bg-rose-50/40 hover:bg-rose-50/70"
+                            : "hover:bg-blue-50/30"
                       }`}
                     >
+                      <td className="py-4 pl-6">
+                        <input
+                          type="checkbox"
+                          checked={selected.has(inv.id)}
+                          onChange={() => toggleSelect(inv.id)}
+                          className="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                        />
+                      </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="flex flex-col">
                           <Link
                             href={`/invoices/${inv.id}`}
-                            className="font-mono text-sm font-bold text-blue-600 transition-colors hover:text-blue-800"
+                            className="text-sm font-bold text-blue-600 transition-colors hover:text-blue-800"
                           >
                             {inv.invoiceNo}
                           </Link>
                           <span className="mt-0.5 text-xs text-slate-500">
-                            Issued: {fmtDate(inv.invoiceDate)}
+                            {fmtDate(inv.invoiceDate)}
                           </span>
                         </div>
                       </td>
@@ -587,35 +687,37 @@ function HomeInner() {
                           <div className="mr-3 flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-indigo-200 bg-gradient-to-tr from-indigo-100 to-blue-100 text-xs font-bold text-indigo-700 shadow-sm">
                             {initialsOf(inv.customerName)}
                           </div>
-                          <span className="text-sm font-bold text-slate-800">
-                            {inv.customerName || "—"}
-                          </span>
+                          <div className="flex flex-col">
+                            <span className="text-sm font-bold text-slate-800">
+                              {inv.customerName || "—"}
+                            </span>
+                            {inv.createdBy && (
+                              <span className="text-[11px] text-slate-400">
+                                By {inv.createdBy}
+                              </span>
+                            )}
+                          </div>
                         </div>
                       </td>
-                      <td className="px-6 py-4 text-xs text-slate-500">
-                        {inv.createdBy || "—"}
-                      </td>
-                      <td className="px-6 py-4 text-right font-mono text-sm font-bold whitespace-nowrap text-slate-900">
-                        {fmtIdr(inv.totalIdr)}
-                      </td>
-                      <td className="px-6 py-4 text-sm whitespace-nowrap text-slate-600">
-                        {inv.dueDate ? (
-                          <>
-                            {fmtDate(inv.dueDate)}
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="flex flex-col">
+                          <span className="text-sm font-bold text-slate-900">
+                            Rp {fmtIdr(inv.totalIdr)}
+                          </span>
+                          <span className="text-xs text-slate-500">
+                            Due: {inv.dueDate ? fmtDate(inv.dueDate) : "—"}
                             <DueBadge inv={inv} />
-                          </>
-                        ) : (
-                          "—"
-                        )}
+                          </span>
+                        </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <StatusBadge inv={inv} />
                       </td>
-                      <td className="px-6 py-4 text-right whitespace-nowrap">
-                        <div className="flex items-center justify-end gap-2 opacity-0 transition-opacity group-hover:opacity-100">
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="flex items-center gap-2 opacity-0 transition-opacity group-hover:opacity-100">
                           <Link
                             href={`/invoices/${inv.id}?print=1`}
-                            className="rounded border border-slate-300 bg-white px-3 py-1.5 text-xs font-bold text-slate-700 shadow-sm transition-colors hover:bg-slate-50"
+                            className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-bold text-slate-700 shadow-sm transition-colors hover:bg-slate-50"
                           >
                             Print
                           </Link>
@@ -660,7 +762,7 @@ function HomeInner() {
                   : "No matches."}
               </div>
             ) : (
-              sorted.map((inv) => (
+              paged.map((inv) => (
                 <div
                   key={inv.id}
                   className={`rounded-lg border p-4 shadow-sm ${
@@ -672,7 +774,7 @@ function HomeInner() {
                   <div className="flex items-center justify-between gap-2">
                     <Link
                       href={`/invoices/${inv.id}`}
-                      className="font-mono text-sm font-bold text-blue-600 hover:underline"
+                      className="text-sm font-bold text-blue-600 hover:underline"
                     >
                       {inv.invoiceNo}
                     </Link>
@@ -687,8 +789,8 @@ function HomeInner() {
                     </span>
                   </div>
                   <div className="mt-2 flex items-center justify-between gap-2">
-                    <span className="font-mono text-base font-extrabold text-slate-900">
-                      {fmtIdr(inv.totalIdr)}
+                    <span className="text-base font-extrabold text-slate-900">
+                      Rp {fmtIdr(inv.totalIdr)}
                     </span>
                     <span className="text-xs text-slate-500">
                       {inv.dueDate ? (
@@ -721,14 +823,64 @@ function HomeInner() {
           </div>
         </div>
 
-        {/* Footer */}
-        <div className="flex items-center justify-between rounded-b-xl border-t border-slate-200 bg-white px-6 py-4">
+        {/* Footer: range info + pagination */}
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-b-xl border-t border-slate-200 bg-white px-6 py-4">
           <p className="text-sm font-medium text-slate-500">
             Showing{" "}
-            <span className="font-bold text-slate-900">{sorted.length}</span> of{" "}
-            <span className="font-bold text-slate-900">{invoices.length}</span>{" "}
+            <span className="font-bold text-slate-900">
+              {sorted.length === 0 ? 0 : (curPage - 1) * PAGE_SIZE + 1}–
+              {Math.min(curPage * PAGE_SIZE, sorted.length)}
+            </span>{" "}
+            of <span className="font-bold text-slate-900">{sorted.length}</span>{" "}
             invoices
           </p>
+          {totalPages > 1 && (
+            <div className="flex items-center gap-1">
+              <button
+                onClick={() => setPage(curPage - 1)}
+                disabled={curPage === 1}
+                className="rounded-lg border border-slate-300 bg-white px-2.5 py-1.5 text-xs font-semibold text-slate-600 shadow-sm transition-colors hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
+              >
+                ‹ Prev
+              </button>
+              {Array.from({ length: totalPages }, (_, i) => i + 1)
+                .filter(
+                  (p) =>
+                    p === 1 || p === totalPages || Math.abs(p - curPage) <= 1
+                )
+                .reduce<(number | "…")[]>((acc, p, i, arr) => {
+                  if (i > 0 && p - (arr[i - 1] as number) > 1) acc.push("…");
+                  acc.push(p);
+                  return acc;
+                }, [])
+                .map((p, i) =>
+                  p === "…" ? (
+                    <span key={`e${i}`} className="px-1.5 text-xs text-slate-400">
+                      …
+                    </span>
+                  ) : (
+                    <button
+                      key={p}
+                      onClick={() => setPage(p)}
+                      className={`min-w-[32px] rounded-lg px-2.5 py-1.5 text-xs font-bold transition-colors ${
+                        p === curPage
+                          ? "bg-blue-600 text-white shadow-sm"
+                          : "border border-slate-300 bg-white text-slate-600 shadow-sm hover:bg-slate-50"
+                      }`}
+                    >
+                      {p}
+                    </button>
+                  )
+                )}
+              <button
+                onClick={() => setPage(curPage + 1)}
+                disabled={curPage === totalPages}
+                className="rounded-lg border border-slate-300 bg-white px-2.5 py-1.5 text-xs font-semibold text-slate-600 shadow-sm transition-colors hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
+              >
+                Next ›
+              </button>
+            </div>
+          )}
         </div>
       </div>
 

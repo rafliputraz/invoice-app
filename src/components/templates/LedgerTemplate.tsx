@@ -9,6 +9,7 @@ import { invoiceComputed } from "./shared";
 /** Dense boxed-grid layout in the style of carrier (CMA CGM / CNC) invoices. */
 export default function LedgerTemplate({ data }: { data: InvoiceData }) {
   const { totals, visibleItems, perCurrency, signer } = invoiceComputed(data);
+  const showUsd = data.usesUsd ?? true;
 
   return (
     <div
@@ -146,10 +147,14 @@ export default function LedgerTemplate({ data }: { data: InvoiceData }) {
       {/* ===== Rate of exchange | totals ===== */}
       <div className="flex border-b border-black">
         <div className="flex-1 px-2 py-1">
-          <div className="border-b border-neutral-400 pb-0.5 font-semibold">
-            Rate of Exchange
-          </div>
-          <div>1 USD = {fmtNum(data.exchangeRate)} IDR</div>
+          {showUsd && (
+            <>
+              <div className="border-b border-neutral-400 pb-0.5 font-semibold">
+                Rate of Exchange
+              </div>
+              <div>1 USD = {fmtNum(data.exchangeRate)} IDR</div>
+            </>
+          )}
           <div className="mt-1 border-b border-neutral-400 pb-0.5 font-semibold">
             Currency Charge Totals
           </div>
@@ -205,10 +210,14 @@ export default function LedgerTemplate({ data }: { data: InvoiceData }) {
           <div>{data.bankIdr.bank}</div>
           <div>Account Number: {data.bankIdr.accNo}</div>
           <div>Beneficiary Name: {data.bankIdr.accName}</div>
-          <div className="mt-1.5 font-bold underline">USD Currency</div>
-          <div>{data.bankUsd.bank}</div>
-          <div>Account Number: {data.bankUsd.accNo}</div>
-          <div>Beneficiary Name: {data.bankUsd.accName}</div>
+          {showUsd && (
+            <>
+              <div className="mt-1.5 font-bold underline">USD Currency</div>
+              <div>{data.bankUsd.bank}</div>
+              <div>Account Number: {data.bankUsd.accNo}</div>
+              <div>Beneficiary Name: {data.bankUsd.accName}</div>
+            </>
+          )}
         </div>
         <div className="flex w-[40%] shrink-0 flex-col items-center justify-between border-l border-black px-2 py-1.5">
           <div className="font-bold">Best Regards</div>

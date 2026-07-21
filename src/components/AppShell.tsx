@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import HelpGuide from "./HelpGuide";
 import ChangePassword from "./ChangePassword";
 import IdleLogout from "./IdleLogout";
+import NewInvoiceButton from "./NewInvoiceButton";
 import Image from "next/image";
 
 interface Me {
@@ -288,23 +289,7 @@ export default function AppShell({
                 )}
               </button>
             )}
-            <Link
-              href="/invoices/new"
-              data-tour="new-invoice"
-              className="flex transform items-center gap-2 rounded-lg bg-gradient-to-r from-blue-600 to-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-md shadow-blue-500/20 transition-all hover:from-blue-500 hover:to-indigo-500 active:scale-95"
-            >
-              <svg
-                viewBox="0 0 24 24"
-                fill="none"
-                strokeWidth="2"
-                stroke="currentColor"
-                className="h-4 w-4"
-              >
-                <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
-              </svg>
-              <span className="hidden sm:inline">New Invoice</span>
-              <span className="sm:hidden">New</span>
-            </Link>
+            <NewInvoiceButton />
           </div>
         </header>
 

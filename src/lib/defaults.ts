@@ -1,4 +1,4 @@
-import type { BankAccount, InvoiceData } from "./types";
+import type { BankAccount, InvoiceData, ShipmentDetails } from "./types";
 
 /** Default signer name, configurable via .env.local (NEXT_PUBLIC_DEFAULT_SIGNER). */
 export const DEFAULT_SIGNER =
@@ -23,6 +23,19 @@ export function todayIso(): string {
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
 }
 
+export function emptyShipment(): ShipmentDetails {
+  return {
+    billOfLading: "",
+    loadingPort: "",
+    dischargePort: "",
+    shipmentContract: "",
+    vesselVoyage: "",
+    etd: "",
+    qty: "",
+  };
+}
+
+/** Blank invoice with the house defaults filled in. */
 export function defaultInvoice(): InvoiceData {
   return {
     invoiceNo: "",
@@ -44,15 +57,7 @@ export function defaultInvoice(): InvoiceData {
       addressLines: ["", "", ""],
       taxId: "",
     },
-    shipment: {
-      billOfLading: "",
-      loadingPort: "",
-      dischargePort: "",
-      shipmentContract: "",
-      vesselVoyage: "",
-      etd: "",
-      qty: "",
-    },
+    shipment: emptyShipment(),
     items: [
       { description: "", currency: "USD", unitPrice: 0, qty: 1 },
       {
@@ -71,8 +76,10 @@ export function defaultInvoice(): InvoiceData {
       },
     ],
     exchangeRate: 0,
+    usesUsd: true,
     paymentTerms: "Cash",
     vatEnabled: true,
+    vatVariant: "reduced",
     vatLabel: "@10%*11/12*12%",
     termsLines: [
       "All Invoices are due upon presentation.",

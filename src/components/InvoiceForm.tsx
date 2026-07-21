@@ -6,8 +6,9 @@ import type {
   CustomerMaster,
   InvoiceData,
   LineItem,
+  VatVariant,
 } from "@/lib/types";
-import { itemAmountIdr } from "@/lib/calc";
+import { itemAmountIdr, VAT_VARIANTS } from "@/lib/calc";
 import { DEFAULT_SIGNER } from "@/lib/defaults";
 import { fmtDate, fmtIdr } from "@/lib/format";
 import { dueDateOf } from "@/lib/invoice-number";
@@ -104,12 +105,44 @@ const inputCls =
 export default function InvoiceForm({
   data,
   setData,
+  manualNo = false,
+  setManualNo,
+  isNew = false,
+  numberError = "",
+  addendum = false,
 }: {
   data: InvoiceData;
   setData: Setter;
+  /** When true, the invoice number is user-edited instead of auto-generated. */
+  manualNo?: boolean;
+  /** Provided when the number may be entered/edited manually. */
+  setManualNo?: (v: boolean) => void;
+  /** Distinguishes a brand-new invoice (auto number) from editing an existing one. */
+  isNew?: boolean;
+  /** Validation message for the manual number, shown under the field. */
+  numberError?: string;
+  /** Addendum on an existing B/L: number is a read-only auto-suffix. */
+  addendum?: boolean;
 }) {
   const set = (patch: Partial<InvoiceData>) =>
     setData((prev) => ({ ...prev, ...patch }));
+
+  const usesUsd = data.usesUsd ?? true;
+
+  /**
+   * Switch between multi-currency and IDR-only. Leaving USD line items in an
+   * IDR-only invoice would price them at exchange rate 0, so force them to IDR
+   * and clear the rate when turning USD off.
+   */
+  const setUsesUsd = (v: boolean) =>
+    setData((prev) => ({
+      ...prev,
+      usesUsd: v,
+      exchangeRate: v ? prev.exchangeRate : 0,
+      items: v
+        ? prev.items
+        : prev.items.map((it) => ({ ...it, currency: "IDR" as const })),
+    }));
 
   const setBank = (key: "bankIdr" | "bankUsd", patch: Partial<BankAccount>) =>
     setData((prev) =>
@@ -192,14 +225,80 @@ export default function InvoiceForm({
         tone="blue"
         icon="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
       >
+        {addendum && (
+          <div className="flex items-center gap-2 rounded-lg border border-indigo-200 bg-indigo-50 px-3 py-2 text-[11px] text-indigo-700">
+            <svg
+              className="h-4 w-4 shrink-0"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth="2"
+                d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+              />
+            </svg>
+            Tambahan untuk B/L existing — nomor & shipment/customer mengikuti
+            invoice induk. Isi charge yang berbeda di bawah.
+          </div>
+        )}
         <div className="grid grid-cols-2 gap-3">
-          <Field label="Invoice No (auto)">
-            <input
-              className="w-full cursor-not-allowed rounded-lg border border-slate-200 bg-slate-100 px-3 py-2 font-mono text-sm font-medium text-slate-500"
-              value={data.invoiceNo}
-              readOnly
-              tabIndex={-1}
-            />
+          <Field
+            label={
+              addendum
+                ? "Invoice No (tambahan B/L)"
+                : manualNo
+                  ? "Invoice No (manual)"
+                  : isNew
+                    ? "Invoice No (auto)"
+                    : "Invoice No"
+            }
+          >
+            {manualNo ? (
+              <input
+                className={`${inputCls} font-mono ${
+                  numberError
+                    ? "border-rose-400 focus:border-rose-500 focus:ring-rose-500"
+                    : ""
+                }`}
+                value={data.invoiceNo}
+                onChange={(e) => set({ invoiceNo: e.target.value })}
+                placeholder="mis. 015/III/SFL/25"
+                aria-invalid={!!numberError}
+              />
+            ) : (
+              <input
+                className={`w-full cursor-not-allowed rounded-lg border bg-slate-100 px-3 py-2 font-mono text-sm font-medium text-slate-500 ${
+                  addendum && numberError
+                    ? "border-rose-400"
+                    : "border-slate-200"
+                }`}
+                value={data.invoiceNo}
+                readOnly
+                tabIndex={-1}
+                placeholder={addendum ? "Pilih invoice induk…" : undefined}
+              />
+            )}
+            {(manualNo || addendum) && numberError && (
+              <span className="mt-1 flex items-center gap-1 text-[11px] font-medium text-rose-600">
+                <svg
+                  className="h-3.5 w-3.5 shrink-0"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="2"
+                    d="M12 9v2m0 4h.01M12 5.5L3.5 20h17L12 5.5z"
+                  />
+                </svg>
+                {numberError}
+              </span>
+            )}
           </Field>
           <Field label="Date">
             <input
@@ -210,6 +309,19 @@ export default function InvoiceForm({
             />
           </Field>
         </div>
+        {setManualNo && !addendum && (
+          <label className="flex items-center gap-2 text-xs text-slate-500">
+            <input
+              type="checkbox"
+              checked={manualNo}
+              onChange={(e) => setManualNo(e.target.checked)}
+              className="h-3.5 w-3.5 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+            />
+            {isNew
+              ? "Isi nomor invoice manual (untuk input data lama / backlog)"
+              : "Ubah nomor invoice manual (koreksi jika Invoice No. salah)"}
+          </label>
+        )}
         <div className="grid grid-cols-2 gap-3">
           <Field label="Label">
             <select
@@ -443,19 +555,50 @@ export default function InvoiceForm({
         tone="amber"
         icon="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
       >
-        <Field label="Exchange rate (IDR per USD 1)">
-          <input
-            type="number"
-            step="any"
-            min="0"
-            className={inputCls}
-            value={data.exchangeRate || ""}
-            onChange={(e) =>
-              set({ exchangeRate: parseFloat(e.target.value) || 0 })
-            }
-            placeholder="18436.61"
-          />
+        <Field label="Mata uang invoice">
+          <div className="grid grid-cols-2 gap-2">
+            {(
+              [
+                [true, "USD + IDR"],
+                [false, "IDR Only"],
+              ] as const
+            ).map(([val, label]) => (
+              <button
+                key={label}
+                type="button"
+                onClick={() => setUsesUsd(val)}
+                className={`rounded-lg border px-3 py-2 text-xs font-semibold transition-colors ${
+                  usesUsd === val
+                    ? "border-blue-500 bg-blue-50 text-blue-700"
+                    : "border-slate-300 bg-white text-slate-600 hover:bg-slate-50"
+                }`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+          <span className="mt-1.5 block text-[11px] text-slate-500">
+            {usesUsd
+              ? "Item bisa USD/IDR, kurs & bank USD tampil di invoice."
+              : "Semua item IDR — baris kurs & bank USD disembunyikan."}
+          </span>
         </Field>
+
+        {usesUsd && (
+          <Field label="Exchange rate (IDR per USD 1)">
+            <input
+              type="number"
+              step="any"
+              min="0"
+              className={inputCls}
+              value={data.exchangeRate || ""}
+              onChange={(e) =>
+                set({ exchangeRate: parseFloat(e.target.value) || 0 })
+              }
+              placeholder="18436.61"
+            />
+          </Field>
+        )}
 
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
@@ -520,18 +663,24 @@ export default function InvoiceForm({
                     />
                   </td>
                   <td className="py-1 pr-2">
-                    <select
-                      className="w-[4.5rem] rounded-lg border border-slate-300 px-1 py-1.5 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-                      value={item.currency}
-                      onChange={(e) =>
-                        setItem(i, {
-                          currency: e.target.value as LineItem["currency"],
-                        })
-                      }
-                    >
-                      <option value="USD">USD</option>
-                      <option value="IDR">IDR</option>
-                    </select>
+                    {usesUsd ? (
+                      <select
+                        className="w-[4.5rem] rounded-lg border border-slate-300 px-1 py-1.5 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                        value={item.currency}
+                        onChange={(e) =>
+                          setItem(i, {
+                            currency: e.target.value as LineItem["currency"],
+                          })
+                        }
+                      >
+                        <option value="USD">USD</option>
+                        <option value="IDR">IDR</option>
+                      </select>
+                    ) : (
+                      <span className="inline-block w-[4.5rem] px-1 py-1.5 text-sm text-slate-500">
+                        IDR
+                      </span>
+                    )}
                   </td>
                   <td className="py-1 pr-2">
                     <input
@@ -585,14 +734,43 @@ export default function InvoiceForm({
           + Add row
         </button>
 
-        <label className="flex items-center gap-2 pt-1 text-sm">
-          <input
-            type="checkbox"
-            checked={data.vatEnabled}
-            onChange={(e) => set({ vatEnabled: e.target.checked })}
-          />
-          <span>VAT Charges {data.vatLabel} (1,1%)</span>
-        </label>
+        <div className="space-y-2 pt-1">
+          <label className="flex items-center gap-2 text-sm">
+            <input
+              type="checkbox"
+              checked={data.vatEnabled}
+              onChange={(e) => set({ vatEnabled: e.target.checked })}
+            />
+            <span>Kenakan VAT / PPN</span>
+          </label>
+          {data.vatEnabled && (
+            <div className="ml-6 space-y-1.5">
+              {(Object.keys(VAT_VARIANTS) as VatVariant[]).map((v) => {
+                const info = VAT_VARIANTS[v];
+                const pct = (info.rate * 100).toLocaleString("id-ID", {
+                  maximumFractionDigits: 2,
+                });
+                return (
+                  <label
+                    key={v}
+                    className="flex items-center gap-2 text-xs text-slate-700"
+                  >
+                    <input
+                      type="radio"
+                      name="vatVariant"
+                      checked={(data.vatVariant ?? "reduced") === v}
+                      onChange={() => set({ vatVariant: v, vatLabel: info.label })}
+                    />
+                    <span>
+                      VAT Charges {info.label}{" "}
+                      <span className="text-slate-400">({pct}%)</span>
+                    </span>
+                  </label>
+                );
+              })}
+            </div>
+          )}
+        </div>
       </Section>
 
       <Section
