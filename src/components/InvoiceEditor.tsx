@@ -8,6 +8,7 @@ import { defaultInvoice } from "@/lib/defaults";
 import InvoiceForm from "./InvoiceForm";
 import InvoicePreview from "./InvoicePreview";
 import IdleLogout from "./IdleLogout";
+import { downloadInvoicePdf, invoicePdfName } from "@/lib/pdf";
 
 export default function InvoiceEditor({
   invoiceId,
@@ -24,7 +25,21 @@ export default function InvoiceEditor({
   );
   const [saving, setSaving] = useState(false);
   const [savedMsg, setSavedMsg] = useState("");
+  const [downloading, setDownloading] = useState(false);
   const isNew = invoiceId === undefined;
+
+  const download = async () => {
+    const el = document.getElementById("invoice-print");
+    if (!el) return;
+    setDownloading(true);
+    try {
+      await downloadInvoicePdf(el, invoicePdfName(data.invoiceNo));
+    } catch (err) {
+      setSavedMsg(err instanceof Error ? err.message : "Download failed");
+    } finally {
+      setDownloading(false);
+    }
+  };
 
   const setData = useCallback(
     (updater: (prev: InvoiceData) => InvoiceData) => setDataState(updater),
@@ -132,6 +147,26 @@ export default function InvoiceEditor({
             className="rounded-lg border border-slate-300 bg-white px-4 py-1.5 text-sm font-semibold text-slate-700 shadow-sm transition-colors hover:bg-slate-50 hover:text-slate-900"
           >
             Print / PDF
+          </button>
+          <button
+            onClick={download}
+            disabled={downloading}
+            className="flex items-center gap-1.5 rounded-lg border border-slate-300 bg-white px-4 py-1.5 text-sm font-semibold text-slate-700 shadow-sm transition-colors hover:bg-slate-50 hover:text-slate-900 disabled:opacity-50"
+          >
+            <svg
+              className="h-4 w-4"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth="2"
+                d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5 5 5-5M12 15V3"
+              />
+            </svg>
+            {downloading ? "Preparing…" : "Download"}
           </button>
           <button
             onClick={save}
