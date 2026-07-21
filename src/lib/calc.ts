@@ -2,13 +2,19 @@ import type { InvoiceData, LineItem, VatVariant } from "./types";
 
 /**
  * The two VAT formulas an invoice can use. `label` is the exact string printed
- * on the document; `rate` is the effective multiplier applied to the subtotal.
- * - reduced: 10% (tax base) x 11/12 x 12% = 1.1%
- * - full:    11/12 x 12%                  = 11%
+ * on the document; `rate` is for display only. The actual VAT is computed with
+ * the exact integer fraction num/den — float rates like (11/12)*0.12 come out
+ * as 0.10999999999..., which flooring then turns into an off-by-one rupiah
+ * (e.g. 1,125,000 x 11% -> 123,749 instead of 123,750).
+ * - reduced: 10% (tax base) x 11/12 x 12% = 1.1%  = 11/1000
+ * - full:    11/12 x 12%                  = 11%   = 11/100
  */
-export const VAT_VARIANTS: Record<VatVariant, { rate: number; label: string }> = {
-  reduced: { rate: 0.1 * (11 / 12) * 0.12, label: "@10%*11/12*12%" },
-  full: { rate: (11 / 12) * 0.12, label: "@11/12*12%" },
+export const VAT_VARIANTS: Record<
+  VatVariant,
+  { rate: number; num: number; den: number; label: string }
+> = {
+  reduced: { rate: 0.011, num: 11, den: 1000, label: "@10%*11/12*12%" },
+  full: { rate: 0.11, num: 11, den: 100, label: "@11/12*12%" },
 };
 
 /** Backward-compatible alias: the reduced rate old invoices assumed. */
@@ -47,7 +53,8 @@ export function computeTotals(data: InvoiceData): Totals {
     0
   );
   // Indonesian tax convention: VAT is truncated (floored) to whole rupiah.
-  const rate = VAT_VARIANTS[data.vatVariant ?? "reduced"].rate;
-  const vat = data.vatEnabled ? Math.floor(subtotal * rate) : 0;
+  // Integer multiply-then-divide keeps the math exact (no float drift).
+  const { num, den } = VAT_VARIANTS[data.vatVariant ?? "reduced"];
+  const vat = data.vatEnabled ? Math.floor((subtotal * num) / den) : 0;
   return { subtotal, vat, total: subtotal + vat };
 }

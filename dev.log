@@ -414,3 +414,14 @@
  GET /api/auth/me 200 in 316ms
  GET /api/auth/me 200 in 293ms
  GET /api/auth/me 200 in 304ms
+ GET /api/auth/me 200 in 302ms
+ GET /invoices/35 200 in 253ms
+ GET /api/customers/master 200 in 341ms
+ GET /api/customers/master 200 in 293ms
+ GET /api/auth/me 200 in 299ms
+ GET /api/auth/me 200 in 308ms
+ GET /api/auth/me 200 in 307ms
+ GET /api/auth/me 200 in 297ms
+ GET /api/auth/me 200 in 312ms
+ ✓ Compiled in 80ms
+ ✓ Compiled in 88ms
