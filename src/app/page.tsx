@@ -1,6 +1,7 @@
 "use client";
 
 import { Suspense, useEffect, useMemo, useState } from "react";
+import { createPortal } from "react-dom";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import type { InvoiceListItem, InvoiceStatus } from "@/lib/types";
@@ -149,12 +150,18 @@ function HomeInner() {
     load();
   };
 
-  // Which row's status popover is open.
-  const [statusMenuId, setStatusMenuId] = useState<number | null>(null);
+  // Which row's status popover is open + its fixed-position anchor. The
+  // position is captured at click time so no ref is needed (StatusBadge is a
+  // closure component that remounts on parent re-renders, which resets refs).
+  const [statusMenu, setStatusMenu] = useState<{
+    id: number;
+    top: number;
+    left: number;
+  } | null>(null);
   const [savingStatusId, setSavingStatusId] = useState<number | null>(null);
 
   const setStatus = async (inv: InvoiceListItem, next: InvoiceStatus) => {
-    setStatusMenuId(null);
+    setStatusMenu(null);
     if (inv.status === next) return;
     // Optimistic update; rolled back if the request fails.
     setSavingStatusId(inv.id);
@@ -351,19 +358,36 @@ function HomeInner() {
   );
 
   // Status badge + change-status popover; shared by the desktop table and
-  // the mobile card list.
+  // the mobile card list. The menu is portalled to <body> with a fixed
+  // position — inside the table it would be clipped by the overflow-x-auto
+  // scroll container (bottom rows made the menu unreachable).
   const StatusBadge = ({
     inv,
     align = "left",
   }: {
     inv: InvoiceListItem;
     align?: "left" | "right";
-  }) => (
+  }) => {
+    const open = statusMenu?.id === inv.id;
+    return (
     <div className="relative inline-block">
       <button
-        onClick={() =>
-          setStatusMenuId((cur) => (cur === inv.id ? null : inv.id))
-        }
+        onClick={(e) => {
+          if (open) {
+            setStatusMenu(null);
+            return;
+          }
+          const MENU_W = 176; // w-44
+          const MENU_H = 96; // ~2 options
+          const r = e.currentTarget.getBoundingClientRect();
+          // Flip upward when the menu would fall off the bottom of the viewport.
+          const top =
+            r.bottom + 4 + MENU_H > window.innerHeight
+              ? r.top - MENU_H - 4
+              : r.bottom + 4;
+          const left = align === "right" ? r.right - MENU_W : r.left;
+          setStatusMenu({ id: inv.id, top, left });
+        }}
         disabled={savingStatusId === inv.id}
         title="Change payment status"
         className={`inline-flex items-center rounded-md border px-2.5 py-1 text-xs font-bold transition-colors disabled:opacity-60 ${
@@ -390,16 +414,17 @@ function HomeInner() {
           />
         </svg>
       </button>
-      {statusMenuId === inv.id && (
-        <>
+      {open &&
+        statusMenu &&
+        createPortal(
+          <>
           <div
-            className="fixed inset-0 z-10"
-            onClick={() => setStatusMenuId(null)}
+            className="fixed inset-0 z-40"
+            onClick={() => setStatusMenu(null)}
           />
           <div
-            className={`absolute z-20 mt-1 w-44 overflow-hidden rounded-lg border border-slate-200 bg-white py-1 text-left shadow-lg ${
-              align === "right" ? "right-0" : "left-0"
-            }`}
+            className="app-font fixed z-50 w-44 overflow-hidden rounded-lg border border-slate-200 bg-white py-1 text-left shadow-lg"
+            style={{ top: statusMenu.top, left: statusMenu.left }}
           >
             {(
               [
@@ -435,10 +460,12 @@ function HomeInner() {
               </button>
             ))}
           </div>
-        </>
-      )}
+          </>,
+          document.body
+        )}
     </div>
-  );
+    );
+  };
 
   const monthLabel = (ym: string) =>
     new Date(ym + "-01T00:00:00").toLocaleDateString("en-US", {
@@ -495,7 +522,7 @@ function HomeInner() {
           sub={
             stats.overdueCount > 0
               ? `${stats.overdueCount} invoice perlu ditagih`
-              : "Tidak ada yang telat 🎉"
+              : "Tidak ada yang telat"
           }
           tone={stats.overdueCount > 0 ? "red" : undefined}
           icon="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"

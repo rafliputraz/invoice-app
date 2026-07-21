@@ -326,3 +326,82 @@
  ✓ Compiled in 93ms
  ✓ Compiled in 78ms
  ✓ Compiled in 81ms
+ GET /api/auth/me 200 in 308ms
+ GET / 200 in 449ms
+ GET /icon.png?icon.8057f304.png 200 in 375ms
+ GET /api/invoices 200 in 344ms
+ GET /api/auth/me 200 in 346ms
+ GET /api/auth/me 200 in 302ms
+ GET /api/invoices 200 in 286ms
+ GET /invoices/35 200 in 134ms
+ GET /api/customers/master 200 in 296ms
+ GET /api/customers/master 200 in 309ms
+ GET / 200 in 97ms
+ GET /api/invoices 200 in 313ms
+ GET /api/auth/me 200 in 320ms
+ GET /api/invoices 200 in 328ms
+ GET /api/auth/me 200 in 336ms
+ GET /api/auth/me 200 in 294ms
+ GET /api/auth/me 200 in 299ms
+ GET /api/auth/me 200 in 303ms
+ GET /api/auth/me 200 in 291ms
+ ✓ Compiled /users in 286ms
+ GET /users 200 in 361ms
+ ✓ Compiled /api/users in 130ms
+ GET /api/auth/me 200 in 288ms
+ GET /api/users 200 in 440ms
+ GET /api/auth/me 200 in 302ms
+ GET /api/users 200 in 278ms
+ GET /api/auth/me 200 in 305ms
+ GET /api/auth/me 200 in 309ms
+ GET / 200 in 107ms
+ GET /api/invoices 200 in 321ms
+ GET /api/auth/me 200 in 327ms
+ GET /api/invoices 200 in 322ms
+ GET /api/auth/me 200 in 330ms
+ GET /api/auth/me 200 in 306ms
+ GET /api/auth/me 200 in 309ms
+ GET /api/auth/me 200 in 297ms
+ GET /api/auth/me 200 in 295ms
+ GET / 200 in 182ms
+ GET /icon.png?icon.8057f304.png 200 in 315ms
+ GET /api/invoices 200 in 345ms
+ GET /api/auth/me 200 in 347ms
+ GET /api/auth/me 200 in 304ms
+ GET /api/auth/me 200 in 292ms
+ ✓ Compiled in 75ms
+ ✓ Compiled in 86ms
+ ✓ Compiled in 100ms
+ ✓ Compiled / in 56ms
+ GET / 200 in 222ms
+ GET /api/auth/me 200 in 293ms
+ ✓ Compiled in 79ms
+ GET / 200 in 465ms
+ GET /icon.png?icon.8057f304.png 200 in 373ms
+ GET /api/invoices 200 in 352ms
+ GET /api/auth/me 200 in 355ms
+ GET /api/auth/me 200 in 303ms
+ GET /invoices/30?print=1 200 in 131ms
+ GET /api/customers/master 200 in 292ms
+ GET /api/customers/master 200 in 306ms
+ GET / 200 in 97ms
+ GET /api/invoices 200 in 331ms
+ GET /api/auth/me 200 in 338ms
+ GET /api/invoices 200 in 323ms
+ GET /api/auth/me 200 in 332ms
+ GET /api/auth/me 200 in 307ms
+ GET /api/auth/me 200 in 293ms
+ ✓ Compiled in 106ms
+ GET /api/invoices 200 in 329ms
+ GET /api/auth/me 200 in 341ms
+ GET /api/auth/me 200 in 363ms
+ ⚠ Fast Refresh had to perform a full reload due to a runtime error.
+ ✓ Compiled in 72ms
+ GET /api/invoices 200 in 493ms
+ GET /api/auth/me 200 in 494ms
+ GET / 200 in 508ms
+ GET /icon.png?icon.8057f304.png 200 in 310ms
+ ✓ Compiled in 69ms
+ GET /api/invoices 200 in 306ms
+ GET /api/auth/me 200 in 310ms
+ GET /api/auth/me 200 in 314ms
