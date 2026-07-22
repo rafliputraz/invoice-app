@@ -20,6 +20,9 @@ export const VAT_VARIANTS: Record<
 /** Backward-compatible alias: the reduced rate old invoices assumed. */
 export const VAT_RATE = VAT_VARIANTS.reduced.rate;
 
+/** Default PPh (withholding) rate applied when an invoice is marked "kena PPh". */
+export const WITHHOLDING_DEFAULT_RATE = 0.02;
+
 /** IDR amount for one line item, rounded to whole rupiah. */
 export function itemAmountIdr(item: LineItem, exchangeRate: number): number {
   const qty = item.qty || 0;
@@ -45,6 +48,8 @@ export interface Totals {
   subtotal: number; // Total (Excl. VAT)
   vat: number; // VAT Charges
   total: number; // Total (Incl. VAT)
+  withholding: number; // PPh withheld on payment (0 when not applicable)
+  netReceived: number; // total - withholding (amount actually received when paid)
 }
 
 export function computeTotals(data: InvoiceData): Totals {
@@ -56,5 +61,10 @@ export function computeTotals(data: InvoiceData): Totals {
   // Integer multiply-then-divide keeps the math exact (no float drift).
   const { num, den } = VAT_VARIANTS[data.vatVariant ?? "reduced"];
   const vat = data.vatEnabled ? Math.floor((subtotal * num) / den) : 0;
-  return { subtotal, vat, total: subtotal + vat };
+  const total = subtotal + vat;
+  // PPh (withholding) is deducted from the DPP (subtotal), not the VAT-inclusive
+  // total. Only applies when the invoice is marked "kena PPh".
+  const wRate = data.withholdingRate ?? WITHHOLDING_DEFAULT_RATE;
+  const withholding = data.withholdingEnabled ? Math.round(subtotal * wRate) : 0;
+  return { subtotal, vat, total, withholding, netReceived: total - withholding };
 }

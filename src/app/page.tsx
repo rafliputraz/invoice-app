@@ -52,7 +52,7 @@ function StatCard({
   label: string;
   value: string;
   sub?: string;
-  tone?: "amber" | "red";
+  tone?: "amber" | "red" | "emerald";
   icon: string;
 }) {
   const valueCls =
@@ -60,13 +60,17 @@ function StatCard({
       ? "text-rose-600"
       : tone === "amber"
         ? "text-amber-600"
-        : "text-slate-900";
+        : tone === "emerald"
+          ? "text-emerald-600"
+          : "text-slate-900";
   const chipCls =
     tone === "red"
       ? "bg-rose-50 text-rose-600"
       : tone === "amber"
         ? "bg-amber-50 text-amber-600"
-        : "bg-slate-100 text-slate-600";
+        : tone === "emerald"
+          ? "bg-emerald-50 text-emerald-600"
+          : "bg-slate-100 text-slate-600";
   return (
     <div className="relative overflow-hidden rounded-xl border border-slate-200/80 bg-white p-5 shadow-card">
       <div className="relative z-10 mb-2 flex items-start justify-between">
@@ -206,6 +210,7 @@ function HomeInner() {
     const ym = localYm(new Date());
     const thisMonth = invoices.filter((inv) => inv.invoiceDate.startsWith(ym));
     const unpaid = invoices.filter((inv) => inv.status === "unpaid");
+    const paid = invoices.filter((inv) => inv.status === "paid");
     const overdue = invoices.filter(isOverdue);
     const sum = (list: InvoiceListItem[]) =>
       list.reduce((acc, inv) => acc + inv.totalIdr, 0);
@@ -216,6 +221,9 @@ function HomeInner() {
       outstandingCount: unpaid.length,
       overdueCount: overdue.length,
       overdueTotal: sum(overdue),
+      paidCount: paid.length,
+      // Amount actually received on paid invoices, net of PPh withholding.
+      totalReceived: paid.reduce((acc, inv) => acc + inv.netReceivedIdr, 0),
     };
   }, [invoices]);
 
@@ -492,7 +500,7 @@ function HomeInner() {
       {/* Metric cards */}
       <div
         data-tour="stats"
-        className="mb-8 grid grid-cols-1 gap-5 sm:grid-cols-2 md:grid-cols-4"
+        className="mb-8 grid grid-cols-1 gap-5 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-5"
       >
         <StatCard
           label="Invoices This Month"
@@ -526,6 +534,17 @@ function HomeInner() {
           }
           tone={stats.overdueCount > 0 ? "red" : undefined}
           icon="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+        />
+        <StatCard
+          label="Total Diterima"
+          value={fmtIdr(stats.totalReceived)}
+          sub={
+            stats.paidCount > 0
+              ? `${stats.paidCount} invoice dibayar (net PPh)`
+              : "belum ada yang dibayar"
+          }
+          tone="emerald"
+          icon="M5 13l4 4L19 7"
         />
       </div>
 
@@ -731,6 +750,12 @@ function HomeInner() {
                           <span className="text-sm font-bold text-slate-900">
                             Rp {fmtIdr(inv.totalIdr)}
                           </span>
+                          {inv.status === "paid" &&
+                            inv.netReceivedIdr < inv.totalIdr && (
+                              <span className="text-xs font-semibold text-emerald-600">
+                                Diterima Rp {fmtIdr(inv.netReceivedIdr)}
+                              </span>
+                            )}
                           <span className="text-xs text-slate-500">
                             Due: {inv.dueDate ? fmtDate(inv.dueDate) : "—"}
                             <DueBadge inv={inv} />
@@ -816,9 +841,17 @@ function HomeInner() {
                     </span>
                   </div>
                   <div className="mt-2 flex items-center justify-between gap-2">
-                    <span className="text-base font-extrabold text-slate-900">
-                      Rp {fmtIdr(inv.totalIdr)}
-                    </span>
+                    <div className="flex flex-col">
+                      <span className="text-base font-extrabold text-slate-900">
+                        Rp {fmtIdr(inv.totalIdr)}
+                      </span>
+                      {inv.status === "paid" &&
+                        inv.netReceivedIdr < inv.totalIdr && (
+                          <span className="text-xs font-semibold text-emerald-600">
+                            Diterima Rp {fmtIdr(inv.netReceivedIdr)}
+                          </span>
+                        )}
+                    </div>
                     <span className="text-xs text-slate-500">
                       {inv.dueDate ? (
                         <>

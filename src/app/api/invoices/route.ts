@@ -14,12 +14,17 @@ export async function GET() {
       `SELECT id, invoice_no AS invoiceNo, invoice_date AS invoiceDate,
               customer_name AS customerName, total_idr AS totalIdr,
               created_at AS createdAt, created_by AS createdBy,
-              seq, year, status, due_date AS dueDate
+              seq, year, status, due_date AS dueDate,
+              withholding_idr AS withholdingIdr
        FROM invoices WHERE deleted_at IS NULL
        ORDER BY invoice_date DESC, created_at DESC, id DESC`
     )
-    .all();
-  return NextResponse.json(rows);
+    .all() as Array<{ totalIdr: number; withholdingIdr: number }>;
+  const list = rows.map((row) => ({
+    ...row,
+    netReceivedIdr: row.totalIdr - row.withholdingIdr,
+  }));
+  return NextResponse.json(list);
 }
 
 export async function POST(req: NextRequest) {
@@ -41,7 +46,7 @@ export async function POST(req: NextRequest) {
 
   const db = getDb();
   const year = yearOf(data.invoiceDate);
-  const { total } = computeTotals(data);
+  const { total, withholding } = computeTotals(data);
   const sessionUser = await getSessionUser();
   const createdBy = sessionUser?.name || sessionUser?.username || "";
 
@@ -67,8 +72,8 @@ export async function POST(req: NextRequest) {
     const saved: InvoiceData = { ...data, invoiceNo };
     const result = db
       .prepare(
-        `INSERT INTO invoices (seq, year, invoice_no, invoice_date, customer_name, total_idr, data, created_by, due_date)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`
+        `INSERT INTO invoices (seq, year, invoice_no, invoice_date, customer_name, total_idr, withholding_idr, data, created_by, due_date)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
       )
       .run(
         seq,
@@ -77,6 +82,7 @@ export async function POST(req: NextRequest) {
         data.invoiceDate,
         data.invoiceTo.name,
         total,
+        withholding,
         JSON.stringify(saved),
         createdBy,
         dueDateOf(data.invoiceDate, data.dueDays)

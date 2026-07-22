@@ -63,7 +63,7 @@ export async function PUT(req: NextRequest, { params }: Params) {
 
   const invoiceNo = changingNo ? wantsNo : existing.invoiceNo;
   const saved: InvoiceData = { ...data, invoiceNo };
-  const { total } = computeTotals(saved);
+  const { total, withholding } = computeTotals(saved);
 
   if (changingNo) {
     // Keep seq/year meaningful for ordering and future auto-numbers: reuse the
@@ -75,7 +75,7 @@ export async function PUT(req: NextRequest, { params }: Params) {
     db.prepare(
       `UPDATE invoices
        SET invoice_no = ?, seq = ?, year = ?, invoice_date = ?, customer_name = ?,
-           total_idr = ?, data = ?, due_date = ?, updated_at = datetime('now', 'localtime')
+           total_idr = ?, withholding_idr = ?, data = ?, due_date = ?, updated_at = datetime('now', 'localtime')
        WHERE id = ?`
     ).run(
       invoiceNo,
@@ -84,6 +84,7 @@ export async function PUT(req: NextRequest, { params }: Params) {
       saved.invoiceDate,
       saved.invoiceTo.name,
       total,
+      withholding,
       JSON.stringify(saved),
       dueDateOf(saved.invoiceDate, saved.dueDays),
       Number(id)
@@ -91,13 +92,14 @@ export async function PUT(req: NextRequest, { params }: Params) {
   } else {
     db.prepare(
       `UPDATE invoices
-       SET invoice_date = ?, customer_name = ?, total_idr = ?, data = ?,
+       SET invoice_date = ?, customer_name = ?, total_idr = ?, withholding_idr = ?, data = ?,
            due_date = ?, updated_at = datetime('now', 'localtime')
        WHERE id = ?`
     ).run(
       saved.invoiceDate,
       saved.invoiceTo.name,
       total,
+      withholding,
       JSON.stringify(saved),
       dueDateOf(saved.invoiceDate, saved.dueDays),
       Number(id)

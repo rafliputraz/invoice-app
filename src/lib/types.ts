@@ -78,6 +78,11 @@ export interface InvoiceData {
   vatVariant?: VatVariant;
   vatLabel: string; // display label, kept in sync with vatVariant e.g. "@10%*11/12*12%"
 
+  /** Whether this invoice is subject to PPh withholding when paid. Default false. */
+  withholdingEnabled?: boolean;
+  /** PPh rate as a decimal (0.02 = 2%). Defaults to 0.02 when enabled. */
+  withholdingRate?: number;
+
   termsLines: string[];
 
   /** Name under the signature area; falls back to company.name when absent. */
@@ -109,4 +114,6 @@ export interface InvoiceListItem {
   year: number;
   status: InvoiceStatus;
   dueDate: string | null;
+  withholdingIdr: number; // PPh withheld (0 when not applicable)
+  netReceivedIdr: number; // totalIdr - withholdingIdr
 }

@@ -69,6 +69,15 @@ function createDb(): Database.Database {
     // column already exists
   }
 
+  // Migration: PPh withholding amount (denormalized like total_idr; 0 when N/A).
+  try {
+    db.exec(
+      "ALTER TABLE invoices ADD COLUMN withholding_idr INTEGER NOT NULL DEFAULT 0"
+    );
+  } catch {
+    // column already exists
+  }
+
   // Migration: track when each user was last active (updated via /api/auth/me).
   try {
     db.exec("ALTER TABLE users ADD COLUMN last_seen TEXT");

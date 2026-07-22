@@ -425,3 +425,107 @@
  GET /api/auth/me 200 in 312ms
  ✓ Compiled in 80ms
  ✓ Compiled in 88ms
+ GET /api/auth/me 200 in 289ms
+ GET /api/auth/me 200 in 308ms
+ GET /api/auth/me 200 in 301ms
+ GET /api/auth/me 200 in 300ms
+ GET /api/auth/me 200 in 309ms
+ GET /api/auth/me 200 in 302ms
+ GET /api/auth/me 200 in 348ms
+ POST /api/auth/logout 200 in 330ms
+ GET /login 200 in 318ms
+ GET /login 200 in 168ms
+ ✓ Compiled in 81ms
+ ✓ Compiled in 87ms
+ GET /login?next=%2F 200 in 196ms
+ POST /api/auth/login 401 in 463ms
+ POST /api/auth/login 401 in 389ms
+ POST /api/auth/login 200 in 370ms
+ GET / 200 in 232ms
+ GET / 200 in 110ms
+SqliteError: no such column: withholding_idr
+    at GET (src\app\api\invoices\route.ts:13:6)
+  11 |   const db = getDb();
+  12 |   const rows = db
+> 13 |     .prepare(
+     |      ^
+  14 |       `SELECT id, invoice_no AS invoiceNo, invoice_date AS invoiceDate,
+  15 |               customer_name AS customerName, total_idr AS totalIdr,
+  16 |               created_at AS createdAt, created_by AS createdBy, {
+  code: 'SQLITE_ERROR'
+}
+ GET /api/invoices 500 in 491ms
+ GET /api/auth/me 200 in 563ms
+SqliteError: no such column: withholding_idr
+    at GET (src\app\api\invoices\route.ts:13:6)
+  11 |   const db = getDb();
+  12 |   const rows = db
+> 13 |     .prepare(
+     |      ^
+  14 |       `SELECT id, invoice_no AS invoiceNo, invoice_date AS invoiceDate,
+  15 |               customer_name AS customerName, total_idr AS totalIdr,
+  16 |               created_at AS createdAt, created_by AS createdBy, {
+  code: 'SQLITE_ERROR'
+}
+ GET /api/invoices 500 in 383ms
+ GET /api/auth/me 200 in 389ms
+ GET /api/auth/me 200 in 310ms
+ GET /api/auth/me 200 in 307ms
+ GET /api/auth/me 200 in 303ms
+ GET /api/auth/me 200 in 311ms
+ ✓ Compiled /invoices/new in 78ms
+ GET /invoices/new 200 in 241ms
+ GET /api/invoices/next-number?date=2026-07-22 200 in 375ms
+ GET /api/customers/master 200 in 408ms
+ GET /api/customers/master 200 in 303ms
+ GET /api/invoices/check-number?no=030%2FVII%2FSFL%2F26 200 in 363ms
+ GET /api/invoices/check-number?no=001%2FVII%2FSFL%2F26 200 in 295ms
+ GET /api/invoices/check-number?no=001%2FI%2FSFL%2F26 200 in 294ms
+ GET / 200 in 96ms
+SqliteError: no such column: withholding_idr
+    at GET (src\app\api\invoices\route.ts:13:6)
+  11 |   const db = getDb();
+  12 |   const rows = db
+> 13 |     .prepare(
+     |      ^
+  14 |       `SELECT id, invoice_no AS invoiceNo, invoice_date AS invoiceDate,
+  15 |               customer_name AS customerName, total_idr AS totalIdr,
+  16 |               created_at AS createdAt, created_by AS createdBy, {
+  code: 'SQLITE_ERROR'
+}
+ GET /api/invoices 500 in 385ms
+ GET /api/auth/me 200 in 394ms
+SqliteError: no such column: withholding_idr
+    at GET (src\app\api\invoices\route.ts:13:6)
+  11 |   const db = getDb();
+  12 |   const rows = db
+> 13 |     .prepare(
+     |      ^
+  14 |       `SELECT id, invoice_no AS invoiceNo, invoice_date AS invoiceDate,
+  15 |               customer_name AS customerName, total_idr AS totalIdr,
+  16 |               created_at AS createdAt, created_by AS createdBy, {
+  code: 'SQLITE_ERROR'
+}
+ GET /api/invoices 500 in 363ms
+ GET /api/auth/me 200 in 383ms
+ GET /api/auth/me 200 in 352ms
+ GET /api/auth/me 200 in 412ms
+ GET / 200 in 396ms
+ GET /icon.png?icon.8057f304.png 200 in 300ms
+SqliteError: no such column: withholding_idr
+    at GET (src\app\api\invoices\route.ts:13:6)
+  11 |   const db = getDb();
+  12 |   const rows = db
+> 13 |     .prepare(
+     |      ^
+  14 |       `SELECT id, invoice_no AS invoiceNo, invoice_date AS invoiceDate,
+  15 |               customer_name AS customerName, total_idr AS totalIdr,
+  16 |               created_at AS createdAt, created_by AS createdBy, {
+  code: 'SQLITE_ERROR'
+}
+ GET /api/invoices 500 in 374ms
+ GET /api/auth/me 200 in 378ms
+ GET /api/auth/me 200 in 312ms
+ GET /api/auth/me 200 in 309ms
+ GET /api/auth/me 200 in 317ms
+[?25h
