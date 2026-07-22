@@ -1,15 +1,19 @@
 "use client";
 
 import type { InvoiceData } from "@/lib/types";
-import { itemAmountIdr } from "@/lib/calc";
-import { fmtIdr, fmtNum, fmtDate } from "@/lib/format";
-import { amountInWords } from "@/lib/terbilang";
+import { itemDisplayAmount } from "@/lib/calc";
+import { fmtIdr, fmtNum, fmtDate, fmtMoney } from "@/lib/format";
+import { amountInWords, amountInWordsUsd } from "@/lib/terbilang";
 import { invoiceComputed } from "./shared";
 
 /** Dense boxed-grid layout in the style of carrier (CMA CGM / CNC) invoices. */
 export default function LedgerTemplate({ data }: { data: InvoiceData }) {
-  const { totals, visibleItems, perCurrency, signer } = invoiceComputed(data);
-  const showUsd = data.usesUsd ?? true;
+  const { totals, visibleItems, perCurrency, signer, currency, usdOnly } =
+    invoiceComputed(data);
+  // USD-only invoices show no exchange-rate line and no IDR bank block.
+  const showRate = (data.usesUsd ?? true) && !usdOnly;
+  const showUsdBank = (data.usesUsd ?? true) || usdOnly;
+  const words = usdOnly ? amountInWordsUsd(totals.total) : amountInWords(totals.total);
 
   return (
     <div
@@ -115,7 +119,7 @@ export default function LedgerTemplate({ data }: { data: InvoiceData }) {
             <th className="w-[15%] text-right font-bold">Rate</th>
             <th className="w-[10%] text-center font-bold">Based on</th>
             <th className="w-[25%] !border-r-0 text-right font-bold">
-              Amount in IDR
+              Amount in {currency}
             </th>
           </tr>
         </thead>
@@ -129,7 +133,7 @@ export default function LedgerTemplate({ data }: { data: InvoiceData }) {
                 {item.qty} {item.pinned ? "FIX" : "UNI"}
               </td>
               <td className="!border-r-0 text-right">
-                {fmtIdr(itemAmountIdr(item, data.exchangeRate))}
+                {fmtMoney(itemDisplayAmount(item, data), currency)}
               </td>
             </tr>
           ))}
@@ -147,7 +151,7 @@ export default function LedgerTemplate({ data }: { data: InvoiceData }) {
       {/* ===== Rate of exchange | totals ===== */}
       <div className="flex border-b border-black">
         <div className="flex-1 px-2 py-1">
-          {showUsd && (
+          {showRate && (
             <>
               <div className="border-b border-neutral-400 pb-0.5 font-semibold">
                 Rate of Exchange
@@ -177,9 +181,9 @@ export default function LedgerTemplate({ data }: { data: InvoiceData }) {
         <div className="flex w-[45%] shrink-0 flex-col border-l border-black">
           <div className="flex justify-between border-b border-neutral-400 px-2 py-1">
             <span>Total Excl. Tax/VAT:</span>
-            <span>{fmtIdr(totals.subtotal)}</span>
+            <span>{fmtMoney(totals.subtotal, currency)}</span>
           </div>
-          {data.vatEnabled && (
+          {!usdOnly && data.vatEnabled && (
             <div className="flex justify-between border-b border-neutral-400 px-2 py-1">
               <span>VAT {data.vatLabel}:</span>
               <span>{fmtIdr(totals.vat)}</span>
@@ -187,7 +191,7 @@ export default function LedgerTemplate({ data }: { data: InvoiceData }) {
           )}
           <div className="flex flex-1 justify-between px-2 py-1 text-[9.5pt] font-bold">
             <span>Total Incl. Tax/VAT:</span>
-            <span>{fmtIdr(totals.total)}</span>
+            <span>{fmtMoney(totals.total, currency)}</span>
           </div>
         </div>
       </div>
@@ -197,22 +201,28 @@ export default function LedgerTemplate({ data }: { data: InvoiceData }) {
         <div>
           <span className="font-bold">Total Amount : </span>
           <span className="text-[10pt] font-bold">
-            {fmtIdr(totals.total)} IDR
+            {fmtMoney(totals.total, currency)} {currency}
           </span>
         </div>
-        <div className="italic">{amountInWords(totals.total)}</div>
+        <div className="italic">{words}</div>
       </div>
 
       {/* ===== Bank box | signature ===== */}
       <div className="flex border-b border-black">
         <div className="flex-1 px-2 py-1.5">
-          <div className="font-bold underline">IDR Currency</div>
-          <div>{data.bankIdr.bank}</div>
-          <div>Account Number: {data.bankIdr.accNo}</div>
-          <div>Beneficiary Name: {data.bankIdr.accName}</div>
-          {showUsd && (
+          {!usdOnly && (
             <>
-              <div className="mt-1.5 font-bold underline">USD Currency</div>
+              <div className="font-bold underline">IDR Currency</div>
+              <div>{data.bankIdr.bank}</div>
+              <div>Account Number: {data.bankIdr.accNo}</div>
+              <div>Beneficiary Name: {data.bankIdr.accName}</div>
+            </>
+          )}
+          {showUsdBank && (
+            <>
+              <div className={usdOnly ? "font-bold underline" : "mt-1.5 font-bold underline"}>
+                USD Currency
+              </div>
               <div>{data.bankUsd.bank}</div>
               <div>Account Number: {data.bankUsd.accNo}</div>
               <div>Beneficiary Name: {data.bankUsd.accName}</div>

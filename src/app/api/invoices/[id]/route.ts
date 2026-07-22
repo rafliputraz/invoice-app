@@ -75,7 +75,7 @@ export async function PUT(req: NextRequest, { params }: Params) {
     db.prepare(
       `UPDATE invoices
        SET invoice_no = ?, seq = ?, year = ?, invoice_date = ?, customer_name = ?,
-           total_idr = ?, withholding_idr = ?, data = ?, due_date = ?, updated_at = datetime('now', 'localtime')
+           total_idr = ?, withholding_idr = ?, usd_only = ?, data = ?, due_date = ?, updated_at = datetime('now', 'localtime')
        WHERE id = ?`
     ).run(
       invoiceNo,
@@ -85,6 +85,7 @@ export async function PUT(req: NextRequest, { params }: Params) {
       saved.invoiceTo.name,
       total,
       withholding,
+      saved.usdOnly ? 1 : 0,
       JSON.stringify(saved),
       dueDateOf(saved.invoiceDate, saved.dueDays),
       Number(id)
@@ -92,7 +93,7 @@ export async function PUT(req: NextRequest, { params }: Params) {
   } else {
     db.prepare(
       `UPDATE invoices
-       SET invoice_date = ?, customer_name = ?, total_idr = ?, withholding_idr = ?, data = ?,
+       SET invoice_date = ?, customer_name = ?, total_idr = ?, withholding_idr = ?, usd_only = ?, data = ?,
            due_date = ?, updated_at = datetime('now', 'localtime')
        WHERE id = ?`
     ).run(
@@ -100,6 +101,7 @@ export async function PUT(req: NextRequest, { params }: Params) {
       saved.invoiceTo.name,
       total,
       withholding,
+      saved.usdOnly ? 1 : 0,
       JSON.stringify(saved),
       dueDateOf(saved.invoiceDate, saved.dueDays),
       Number(id)
@@ -110,21 +112,58 @@ export async function PUT(req: NextRequest, { params }: Params) {
 
 export async function PATCH(req: NextRequest, { params }: Params) {
   const { id } = await params;
-  const { status } = (await req.json()) as { status?: string };
+  const body = (await req.json()) as {
+    status?: string;
+    paidAt?: string | null;
+    amountPaid?: number | null;
+    bupotNo?: string | null;
+  };
+  const { status } = body;
   if (status !== "paid" && status !== "unpaid") {
     return NextResponse.json(
       { error: "status must be 'paid' or 'unpaid'" },
       { status: 400 }
     );
   }
+
   const db = getDb();
-  const result = db
-    .prepare(
-      `UPDATE invoices
-       SET status = ?, updated_at = datetime('now', 'localtime')
-       WHERE id = ? AND deleted_at IS NULL`
-    )
-    .run(status, Number(id));
+  let result;
+  if (status === "paid") {
+    // Capture the payment record. All three are optional; amount_paid is left
+    // NULL when not supplied (the recap then defaults it to the net receivable).
+    const paidAt =
+      typeof body.paidAt === "string" && body.paidAt.trim()
+        ? body.paidAt.trim()
+        : null;
+    // Keep the exact figure (USD invoices carry cents); rounding it could push a
+    // full payment below the net and wrongly flag the invoice as "Partial".
+    const amountPaid =
+      typeof body.amountPaid === "number" && body.amountPaid >= 0
+        ? body.amountPaid
+        : null;
+    const bupotNo =
+      typeof body.bupotNo === "string" && body.bupotNo.trim()
+        ? body.bupotNo.trim()
+        : null;
+    result = db
+      .prepare(
+        `UPDATE invoices
+         SET status = 'paid', paid_at = ?, amount_paid = ?, bupot_no = ?,
+             updated_at = datetime('now', 'localtime')
+         WHERE id = ? AND deleted_at IS NULL`
+      )
+      .run(paidAt, amountPaid, bupotNo, Number(id));
+  } else {
+    // Reverting to unpaid clears the payment record.
+    result = db
+      .prepare(
+        `UPDATE invoices
+         SET status = 'unpaid', paid_at = NULL, amount_paid = NULL, bupot_no = NULL,
+             updated_at = datetime('now', 'localtime')
+         WHERE id = ? AND deleted_at IS NULL`
+      )
+      .run(Number(id));
+  }
   if (result.changes === 0) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }

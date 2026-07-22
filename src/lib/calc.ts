@@ -32,6 +32,16 @@ export function itemAmountIdr(item: LineItem, exchangeRate: number): number {
   return Math.round(raw);
 }
 
+/**
+ * Amount shown for one line item, in the invoice's display currency.
+ * USD-only invoices price items directly in USD (no IDR conversion); all other
+ * invoices convert to whole rupiah via itemAmountIdr.
+ */
+export function itemDisplayAmount(item: LineItem, data: InvoiceData): number {
+  if (data.usdOnly) return (item.unitPrice || 0) * (item.qty || 0);
+  return itemAmountIdr(item, data.exchangeRate);
+}
+
 /** Raw per-currency sums (price x qty), before any conversion. */
 export function currencyTotals(items: LineItem[]): { usd: number; idr: number } {
   let usd = 0;
@@ -53,6 +63,15 @@ export interface Totals {
 }
 
 export function computeTotals(data: InvoiceData): Totals {
+  // USD-only invoices carry no tax and no IDR conversion: totals are the raw
+  // USD sum (cents preserved), VAT/withholding are always zero.
+  if (data.usdOnly) {
+    const subtotal = data.items.reduce(
+      (sum, item) => sum + (item.unitPrice || 0) * (item.qty || 0),
+      0
+    );
+    return { subtotal, vat: 0, total: subtotal, withholding: 0, netReceived: subtotal };
+  }
   const subtotal = data.items.reduce(
     (sum, item) => sum + itemAmountIdr(item, data.exchangeRate),
     0

@@ -33,16 +33,23 @@ export interface InvoiceComputed {
   visibleItems: LineItem[];
   perCurrency: { usd: number; idr: number };
   signer: string;
+  /** Display currency for all amounts on the document. */
+  currency: "USD" | "IDR";
+  /** True for USD-only invoices (no IDR, no tax, no exchange rate). */
+  usdOnly: boolean;
 }
 
 export function invoiceComputed(data: InvoiceData): InvoiceComputed {
   const visibleItems = data.items
     .filter((it) => it.description.trim() !== "" || it.unitPrice > 0)
     .sort((a, b) => Number(!!a.pinned) - Number(!!b.pinned));
+  const usdOnly = !!data.usdOnly;
   return {
     totals: computeTotals(data),
     visibleItems,
     perCurrency: currencyTotals(visibleItems),
     signer: data.signatureName ?? DEFAULT_SIGNER,
+    currency: usdOnly ? "USD" : "IDR",
+    usdOnly,
   };
 }

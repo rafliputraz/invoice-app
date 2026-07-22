@@ -83,6 +83,7 @@ export function defaultInvoice(): InvoiceData {
     vatLabel: "@10%*11/12*12%",
     withholdingEnabled: false,
     withholdingRate: 0.02,
+    usdOnly: false,
     termsLines: [
       "All Invoices are due upon presentation.",
       "Invoices not paid within 30 days from the date of invoices will carry an interest of 3% per month.",

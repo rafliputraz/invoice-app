@@ -15,13 +15,16 @@ export async function GET() {
               customer_name AS customerName, total_idr AS totalIdr,
               created_at AS createdAt, created_by AS createdBy,
               seq, year, status, due_date AS dueDate,
-              withholding_idr AS withholdingIdr
+              withholding_idr AS withholdingIdr,
+              paid_at AS paidAt, amount_paid AS amountPaid, bupot_no AS bupotNo,
+              usd_only AS usdOnly
        FROM invoices WHERE deleted_at IS NULL
        ORDER BY invoice_date DESC, created_at DESC, id DESC`
     )
-    .all() as Array<{ totalIdr: number; withholdingIdr: number }>;
+    .all() as Array<{ totalIdr: number; withholdingIdr: number; usdOnly: number }>;
   const list = rows.map((row) => ({
     ...row,
+    usdOnly: !!row.usdOnly,
     netReceivedIdr: row.totalIdr - row.withholdingIdr,
   }));
   return NextResponse.json(list);
@@ -72,8 +75,8 @@ export async function POST(req: NextRequest) {
     const saved: InvoiceData = { ...data, invoiceNo };
     const result = db
       .prepare(
-        `INSERT INTO invoices (seq, year, invoice_no, invoice_date, customer_name, total_idr, withholding_idr, data, created_by, due_date)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+        `INSERT INTO invoices (seq, year, invoice_no, invoice_date, customer_name, total_idr, withholding_idr, usd_only, data, created_by, due_date)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
       )
       .run(
         seq,
@@ -83,6 +86,7 @@ export async function POST(req: NextRequest) {
         data.invoiceTo.name,
         total,
         withholding,
+        data.usdOnly ? 1 : 0,
         JSON.stringify(saved),
         createdBy,
         dueDateOf(data.invoiceDate, data.dueDays)

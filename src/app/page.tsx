@@ -5,12 +5,12 @@ import { createPortal } from "react-dom";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import type { InvoiceListItem, InvoiceStatus } from "@/lib/types";
-import { fmtIdr, fmtDate } from "@/lib/format";
+import { fmtIdr, fmtDate, fmtUsd } from "@/lib/format";
 import AppShell from "@/components/AppShell";
 import GuidedTour from "@/components/GuidedTour";
 
 type SortKey = "invoiceNo" | "invoiceDate" | "customerName" | "totalIdr" | "dueDate";
-type StatusFilter = "all" | "unpaid" | "overdue" | "paid";
+type StatusFilter = "all" | "unpaid" | "overdue" | "partial" | "paid";
 
 function localYm(d: Date): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
@@ -30,6 +30,30 @@ function isOverdue(inv: InvoiceListItem): boolean {
   );
 }
 
+/** Marked paid but the recorded cash received is below the net receivable. */
+function isPartial(inv: InvoiceListItem): boolean {
+  return (
+    inv.status === "paid" &&
+    inv.amountPaid != null &&
+    inv.amountPaid < inv.netReceivedIdr
+  );
+}
+
+/** Cash actually received on a paid invoice (falls back to net when unrecorded). */
+function receivedOf(inv: InvoiceListItem): number {
+  return inv.amountPaid != null ? inv.amountPaid : inv.netReceivedIdr;
+}
+
+/** Format an amount with the invoice's currency prefix ($ for USD-only, else Rp). */
+function money(inv: InvoiceListItem, n: number): string {
+  return inv.usdOnly ? `$ ${fmtUsd(n)}` : `Rp ${fmtIdr(n)}`;
+}
+
+/** Outstanding cash on a partially-paid invoice (0 otherwise). */
+function shortfallOf(inv: InvoiceListItem): number {
+  return isPartial(inv) ? inv.netReceivedIdr - (inv.amountPaid ?? 0) : 0;
+}
+
 function initialsOf(name: string): string {
   return (
     name
@@ -42,16 +66,157 @@ function initialsOf(name: string): string {
   );
 }
 
+/** Today as a local yyyy-mm-dd string (for date <input> defaults). */
+function todayLocal(): string {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(
+    d.getDate()
+  ).padStart(2, "0")}`;
+}
+
+/**
+ * Modal shown when marking an invoice "paid": records payment date, the cash
+ * actually received (supports partial payment), and the bukti-potong number.
+ */
+function PaymentDialog({
+  inv,
+  onClose,
+  onSubmit,
+}: {
+  inv: InvoiceListItem;
+  onClose: () => void;
+  onSubmit: (p: { paidAt: string; amountPaid: number; bupotNo: string }) => void;
+}) {
+  const net = inv.netReceivedIdr; // total - PPh, the amount expected in the bank
+  const [paidAt, setPaidAt] = useState(inv.paidAt ?? todayLocal());
+  const [amountPaid, setAmountPaid] = useState<string>(
+    String(inv.amountPaid ?? net)
+  );
+  const [bupotNo, setBupotNo] = useState(inv.bupotNo ?? "");
+
+  const paid = Number(amountPaid) || 0;
+  const kurang = net - paid;
+
+  return createPortal(
+    <div className="app-font fixed inset-0 z-[60] flex items-center justify-center p-4">
+      <div className="fixed inset-0 bg-slate-900/40" onClick={onClose} />
+      <div className="relative z-10 w-full max-w-sm rounded-xl border border-slate-200 bg-white p-5 shadow-xl">
+        <h3 className="text-base font-bold text-slate-900">
+          Tandai Dibayar — {inv.invoiceNo}
+        </h3>
+        <p className="mt-0.5 text-xs text-slate-500">{inv.customerName}</p>
+
+        <dl className="mt-3 space-y-1 rounded-lg bg-slate-50 p-3 text-xs">
+          <div className="flex justify-between">
+            <dt className="text-slate-500">
+              {inv.usdOnly ? "Total" : "Total (incl. PPN)"}
+            </dt>
+            <dd className="font-semibold text-slate-800">
+              {money(inv, inv.totalIdr)}
+            </dd>
+          </div>
+          {!inv.usdOnly && (
+            <div className="flex justify-between">
+              <dt className="text-slate-500">Potong PPh (BUPOT)</dt>
+              <dd className="font-semibold text-slate-800">
+                − {money(inv, inv.withholdingIdr)}
+              </dd>
+            </div>
+          )}
+          <div className="flex justify-between border-t border-slate-200 pt-1">
+            <dt className="text-slate-500">Diharapkan masuk</dt>
+            <dd className="font-bold text-emerald-600">{money(inv, net)}</dd>
+          </div>
+        </dl>
+
+        <div className="mt-4 space-y-3">
+          <label className="block text-xs">
+            <span className="mb-1 block font-medium text-slate-600">
+              Tanggal Bayar
+            </span>
+            <input
+              type="date"
+              value={paidAt}
+              onChange={(e) => setPaidAt(e.target.value)}
+              className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+            />
+          </label>
+          <label className="block text-xs">
+            <span className="mb-1 block font-medium text-slate-600">
+              Jumlah Dibayar (uang masuk)
+            </span>
+            <input
+              type="number"
+              min="0"
+              step="any"
+              value={amountPaid}
+              onChange={(e) => setAmountPaid(e.target.value)}
+              className="w-full rounded-lg border border-slate-300 px-3 py-2 text-right text-sm"
+            />
+            <span
+              className={`mt-1 block ${
+                kurang > 0
+                  ? "text-amber-600"
+                  : kurang < 0
+                    ? "text-rose-600"
+                    : "text-slate-400"
+              }`}
+            >
+              {kurang > 0
+                ? `Kurang bayar: ${money(inv, kurang)}`
+                : kurang < 0
+                  ? `Lebih bayar: ${money(inv, -kurang)}`
+                  : "Lunas (sesuai net)"}
+            </span>
+          </label>
+          <label className="block text-xs">
+            <span className="mb-1 block font-medium text-slate-600">
+              No. Bukti Potong{" "}
+              <span className="font-normal text-slate-400">(opsional)</span>
+            </span>
+            <input
+              type="text"
+              value={bupotNo}
+              onChange={(e) => setBupotNo(e.target.value)}
+              placeholder="mis. 0001/BP/2026"
+              className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+            />
+          </label>
+        </div>
+
+        <div className="mt-5 flex justify-end gap-2">
+          <button
+            onClick={onClose}
+            className="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-50"
+          >
+            Batal
+          </button>
+          <button
+            onClick={() => onSubmit({ paidAt, amountPaid: paid, bupotNo })}
+            className="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-bold text-white hover:bg-emerald-700"
+          >
+            Simpan
+          </button>
+        </div>
+      </div>
+    </div>,
+    document.body
+  );
+}
+
 function StatCard({
   label,
   value,
   sub,
+  usd,
   tone,
   icon,
 }: {
   label: string;
   value: string;
   sub?: string;
+  /** Secondary USD figure (shown separately since it can't be summed with IDR). */
+  usd?: string;
   tone?: "amber" | "red" | "emerald";
   icon: string;
 }) {
@@ -85,6 +250,9 @@ function StatCard({
         <h3 className={`text-2xl font-extrabold tracking-tight ${valueCls}`}>
           {value}
         </h3>
+        {usd && (
+          <p className="mt-0.5 text-sm font-bold text-slate-700">+ {usd}</p>
+        )}
         {sub && (
           <p className="mt-1 text-xs font-medium text-slate-500">{sub}</p>
         )}
@@ -163,14 +331,26 @@ function HomeInner() {
     left: number;
   } | null>(null);
   const [savingStatusId, setSavingStatusId] = useState<number | null>(null);
+  // Invoice awaiting the "mark as paid" payment dialog.
+  const [payFor, setPayFor] = useState<InvoiceListItem | null>(null);
 
   const setStatus = async (inv: InvoiceListItem, next: InvoiceStatus) => {
     setStatusMenu(null);
+    // Marking as paid captures a payment record first (date, amount, bupot no).
+    // Always opens — clicking "Paid" on an already-paid row edits the record.
+    if (next === "paid") {
+      setPayFor(inv);
+      return;
+    }
     if (inv.status === next) return;
-    // Optimistic update; rolled back if the request fails.
+    // Reverting to unpaid is direct; it also clears any payment record locally.
     setSavingStatusId(inv.id);
     setInvoices((prev) =>
-      prev.map((it) => (it.id === inv.id ? { ...it, status: next } : it))
+      prev.map((it) =>
+        it.id === inv.id
+          ? { ...it, status: next, paidAt: null, amountPaid: null, bupotNo: null }
+          : it
+      )
     );
     try {
       const res = await fetch(`/api/invoices/${inv.id}`, {
@@ -181,9 +361,43 @@ function HomeInner() {
       if (!res.ok) throw new Error(`Failed (${res.status})`);
     } catch {
       setInvoices((prev) =>
-        prev.map((it) =>
-          it.id === inv.id ? { ...it, status: inv.status } : it
-        )
+        prev.map((it) => (it.id === inv.id ? { ...it, status: inv.status } : it))
+      );
+    } finally {
+      setSavingStatusId(null);
+    }
+  };
+
+  // Submit the payment dialog: PATCH the invoice to paid with its payment record.
+  const submitPayment = async (
+    inv: InvoiceListItem,
+    payload: { paidAt: string; amountPaid: number; bupotNo: string }
+  ) => {
+    setPayFor(null);
+    setSavingStatusId(inv.id);
+    setInvoices((prev) =>
+      prev.map((it) =>
+        it.id === inv.id
+          ? {
+              ...it,
+              status: "paid",
+              paidAt: payload.paidAt || null,
+              amountPaid: payload.amountPaid,
+              bupotNo: payload.bupotNo || null,
+            }
+          : it
+      )
+    );
+    try {
+      const res = await fetch(`/api/invoices/${inv.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: "paid", ...payload }),
+      });
+      if (!res.ok) throw new Error(`Failed (${res.status})`);
+    } catch {
+      setInvoices((prev) =>
+        prev.map((it) => (it.id === inv.id ? { ...it, status: inv.status } : it))
       );
     } finally {
       setSavingStatusId(null);
@@ -208,22 +422,46 @@ function HomeInner() {
 
   const stats = useMemo(() => {
     const ym = localYm(new Date());
-    const thisMonth = invoices.filter((inv) => inv.invoiceDate.startsWith(ym));
-    const unpaid = invoices.filter((inv) => inv.status === "unpaid");
-    const paid = invoices.filter((inv) => inv.status === "paid");
-    const overdue = invoices.filter(isOverdue);
+    // Stat cards are in IDR, so USD-only invoices are left out of the money sums.
+    const idrOnly = invoices.filter((inv) => !inv.usdOnly);
+    const thisMonth = idrOnly.filter((inv) => inv.invoiceDate.startsWith(ym));
+    const unpaid = idrOnly.filter((inv) => inv.status === "unpaid");
+    const paid = idrOnly.filter((inv) => inv.status === "paid");
+    const overdue = idrOnly.filter(isOverdue);
     const sum = (list: InvoiceListItem[]) =>
       list.reduce((acc, inv) => acc + inv.totalIdr, 0);
+
+    // USD-only invoices are summed separately (can't be added to rupiah). A
+    // formatted "$X" string is returned only when there is something to show.
+    const usdInv = invoices.filter((inv) => inv.usdOnly);
+    const usdSum = (list: InvoiceListItem[], f: (i: InvoiceListItem) => number) => {
+      const total = list.reduce((acc, inv) => acc + f(inv), 0);
+      return total > 0 ? `$ ${fmtUsd(total)}` : undefined;
+    };
+    const inMonth = (inv: InvoiceListItem) => inv.invoiceDate.startsWith(ym);
+
     return {
-      monthCount: thisMonth.length,
+      // Counts are over ALL invoices (currency-agnostic); only the money sums
+      // are split by currency (IDR total + a separate USD figure).
+      monthCount: invoices.filter(inMonth).length,
       monthTotal: sum(thisMonth),
+      monthTotalUsd: usdSum(usdInv.filter(inMonth), (i) => i.totalIdr),
       outstanding: sum(unpaid),
-      outstandingCount: unpaid.length,
-      overdueCount: overdue.length,
+      outstandingCount: invoices.filter((i) => i.status === "unpaid").length,
+      outstandingUsd: usdSum(
+        usdInv.filter((i) => i.status === "unpaid"),
+        (i) => i.totalIdr
+      ),
+      overdueCount: invoices.filter(isOverdue).length,
       overdueTotal: sum(overdue),
-      paidCount: paid.length,
-      // Amount actually received on paid invoices, net of PPh withholding.
-      totalReceived: paid.reduce((acc, inv) => acc + inv.netReceivedIdr, 0),
+      paidCount: invoices.filter((i) => i.status === "paid").length,
+      partialCount: invoices.filter(isPartial).length,
+      // Cash actually received on paid invoices (uses recorded amount for partials).
+      totalReceived: paid.reduce((acc, inv) => acc + receivedOf(inv), 0),
+      totalReceivedUsd: usdSum(
+        usdInv.filter((i) => i.status === "paid"),
+        receivedOf
+      ),
     };
   }, [invoices]);
 
@@ -241,9 +479,13 @@ function HomeInner() {
       list = list.filter((inv) => inv.invoiceDate.startsWith(monthFilter));
     }
     if (statusFilter !== "all") {
-      list = list.filter((inv) =>
-        statusFilter === "overdue" ? isOverdue(inv) : inv.status === statusFilter
-      );
+      list = list.filter((inv) => {
+        if (statusFilter === "overdue") return isOverdue(inv);
+        if (statusFilter === "partial") return isPartial(inv);
+        // "paid" means fully paid; partial rows live under the Partial tab.
+        if (statusFilter === "paid") return inv.status === "paid" && !isPartial(inv);
+        return inv.status === statusFilter; // unpaid
+      });
     }
     if (!sortKey) return list;
     const dir = sortDir === "asc" ? 1 : -1;
@@ -399,21 +641,29 @@ function HomeInner() {
         disabled={savingStatusId === inv.id}
         title="Change payment status"
         className={`inline-flex items-center rounded-md border px-2.5 py-1 text-xs font-bold transition-colors disabled:opacity-60 ${
-          inv.status === "paid"
-            ? "border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100"
-            : "border-amber-200 bg-amber-50 text-amber-700 hover:bg-amber-100"
+          isPartial(inv)
+            ? "border-sky-200 bg-sky-50 text-sky-700 hover:bg-sky-100"
+            : inv.status === "paid"
+              ? "border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100"
+              : "border-amber-200 bg-amber-50 text-amber-700 hover:bg-amber-100"
         }`}
       >
         <span
           className={`mr-2 h-1.5 w-1.5 rounded-full ${
-            inv.status === "paid" ? "bg-emerald-500" : "bg-amber-500"
+            isPartial(inv)
+              ? "bg-sky-500"
+              : inv.status === "paid"
+                ? "bg-emerald-500"
+                : "bg-amber-500"
           }`}
         />
         {savingStatusId === inv.id
           ? "Saving…"
-          : inv.status === "paid"
-            ? "Paid"
-            : "Unpaid"}
+          : isPartial(inv)
+            ? "Partial"
+            : inv.status === "paid"
+              ? "Paid"
+              : "Unpaid"}
         <svg className="ml-1 h-3 w-3 opacity-50" viewBox="0 0 20 20" fill="currentColor">
           <path
             fillRule="evenodd"
@@ -485,6 +735,7 @@ function HomeInner() {
     { key: "all", label: "All Invoices" },
     { key: "unpaid", label: "Unpaid" },
     { key: "overdue", label: "Overdue" },
+    { key: "partial", label: "Partial" },
     { key: "paid", label: "Paid" },
   ];
 
@@ -497,6 +748,13 @@ function HomeInner() {
       bellDot={stats.overdueCount > 0}
       onBellClick={() => setStatusFilter("overdue")}
     >
+      {payFor && (
+        <PaymentDialog
+          inv={payFor}
+          onClose={() => setPayFor(null)}
+          onSubmit={(p) => submitPayment(payFor, p)}
+        />
+      )}
       {/* Metric cards */}
       <div
         data-tour="stats"
@@ -510,12 +768,14 @@ function HomeInner() {
         <StatCard
           label="Total This Month"
           value={fmtIdr(stats.monthTotal)}
+          usd={stats.monthTotalUsd}
           sub="nilai invoice bulan ini (IDR)"
           icon="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
         />
         <StatCard
           label="Outstanding"
           value={fmtIdr(stats.outstanding)}
+          usd={stats.outstandingUsd}
           sub={
             stats.outstandingCount > 0
               ? `${stats.outstandingCount} invoice belum dibayar`
@@ -538,9 +798,12 @@ function HomeInner() {
         <StatCard
           label="Total Diterima"
           value={fmtIdr(stats.totalReceived)}
+          usd={stats.totalReceivedUsd}
           sub={
             stats.paidCount > 0
-              ? `${stats.paidCount} invoice dibayar (net PPh)`
+              ? `${stats.paidCount} dibayar${
+                  stats.partialCount > 0 ? ` · ${stats.partialCount} partial` : ""
+                }`
               : "belum ada yang dibayar"
           }
           tone="emerald"
@@ -748,14 +1011,19 @@ function HomeInner() {
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="flex flex-col">
                           <span className="text-sm font-bold text-slate-900">
-                            Rp {fmtIdr(inv.totalIdr)}
+                            {money(inv, inv.totalIdr)}
                           </span>
                           {inv.status === "paid" &&
-                            inv.netReceivedIdr < inv.totalIdr && (
+                            receivedOf(inv) < inv.totalIdr && (
                               <span className="text-xs font-semibold text-emerald-600">
-                                Diterima Rp {fmtIdr(inv.netReceivedIdr)}
+                                Diterima {money(inv, receivedOf(inv))}
                               </span>
                             )}
+                          {isPartial(inv) && (
+                            <span className="text-xs font-semibold text-sky-600">
+                              Kurang {money(inv, shortfallOf(inv))}
+                            </span>
+                          )}
                           <span className="text-xs text-slate-500">
                             Due: {inv.dueDate ? fmtDate(inv.dueDate) : "—"}
                             <DueBadge inv={inv} />
@@ -843,14 +1111,19 @@ function HomeInner() {
                   <div className="mt-2 flex items-center justify-between gap-2">
                     <div className="flex flex-col">
                       <span className="text-base font-extrabold text-slate-900">
-                        Rp {fmtIdr(inv.totalIdr)}
+                        {money(inv, inv.totalIdr)}
                       </span>
                       {inv.status === "paid" &&
-                        inv.netReceivedIdr < inv.totalIdr && (
+                        receivedOf(inv) < inv.totalIdr && (
                           <span className="text-xs font-semibold text-emerald-600">
-                            Diterima Rp {fmtIdr(inv.netReceivedIdr)}
+                            Diterima {money(inv, receivedOf(inv))}
                           </span>
                         )}
+                      {isPartial(inv) && (
+                        <span className="text-xs font-semibold text-sky-600">
+                          Kurang {money(inv, shortfallOf(inv))}
+                        </span>
+                      )}
                     </div>
                     <span className="text-xs text-slate-500">
                       {inv.dueDate ? (

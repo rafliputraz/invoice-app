@@ -78,6 +78,22 @@ function createDb(): Database.Database {
     // column already exists
   }
 
+  // Migration: payment record captured when marking an invoice "paid".
+  // NULL means not filled (supports partial payment via amount_paid).
+  // usd_only flags USD-only invoices (total_idr then holds the USD amount).
+  for (const col of [
+    "ADD COLUMN paid_at TEXT",
+    "ADD COLUMN amount_paid INTEGER",
+    "ADD COLUMN bupot_no TEXT",
+    "ADD COLUMN usd_only INTEGER NOT NULL DEFAULT 0",
+  ]) {
+    try {
+      db.exec(`ALTER TABLE invoices ${col}`);
+    } catch {
+      // column already exists
+    }
+  }
+
   // Migration: track when each user was last active (updated via /api/auth/me).
   try {
     db.exec("ALTER TABLE users ADD COLUMN last_seen TEXT");

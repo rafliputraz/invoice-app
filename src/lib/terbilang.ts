@@ -77,3 +77,17 @@ export function amountInWords(n: number): string {
   const words = toWords(Math.round(Math.abs(n)));
   return `${words.charAt(0).toUpperCase()}${words.slice(1)} rupiah`;
 }
+
+/**
+ * Amount in words for USD invoices, e.g.
+ * 1234.5 -> "One thousand two hundred and thirty-four US dollars and fifty cents"
+ */
+export function amountInWordsUsd(n: number): string {
+  const abs = Math.abs(n);
+  const dollars = Math.floor(abs);
+  const cents = Math.round((abs - dollars) * 100);
+  const words = toWords(dollars);
+  let out = `${words.charAt(0).toUpperCase()}${words.slice(1)} US dollars`;
+  if (cents > 0) out += ` and ${toWords(cents)} cents`;
+  return out;
+}

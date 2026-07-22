@@ -10,15 +10,18 @@ import type {
 } from "@/lib/types";
 import {
   computeTotals,
-  itemAmountIdr,
+  itemDisplayAmount,
   VAT_VARIANTS,
   WITHHOLDING_DEFAULT_RATE,
 } from "@/lib/calc";
 import { DEFAULT_SIGNER } from "@/lib/defaults";
-import { fmtDate, fmtIdr } from "@/lib/format";
+import { fmtDate, fmtIdr, fmtMoney } from "@/lib/format";
 import { dueDateOf } from "@/lib/invoice-number";
 
 type Setter = (updater: (prev: InvoiceData) => InvoiceData) => void;
+
+/** Invoice currency mode selectable in the Charges section. */
+type CurrencyMode = "usd_idr" | "idr" | "usd";
 
 const SECTION_TONES = {
   blue: "bg-blue-100 text-blue-600",
@@ -133,21 +136,39 @@ export default function InvoiceForm({
     setData((prev) => ({ ...prev, ...patch }));
 
   const usesUsd = data.usesUsd ?? true;
+  const usdOnly = data.usdOnly ?? false;
+  const currencyMode: CurrencyMode = usdOnly ? "usd" : usesUsd ? "usd_idr" : "idr";
 
   /**
-   * Switch between multi-currency and IDR-only. Leaving USD line items in an
-   * IDR-only invoice would price them at exchange rate 0, so force them to IDR
-   * and clear the rate when turning USD off.
+   * Switch invoice currency mode:
+   * - usd_idr: multi-currency, items USD/IDR, exchange rate + both banks shown.
+   * - idr:     IDR only; USD items forced to IDR, rate cleared.
+   * - usd:     USD only; every item priced in USD, no IDR, no tax (VAT/PPh off).
+   * Leaving mismatched items would price them wrong, so currencies are coerced.
    */
-  const setUsesUsd = (v: boolean) =>
-    setData((prev) => ({
-      ...prev,
-      usesUsd: v,
-      exchangeRate: v ? prev.exchangeRate : 0,
-      items: v
-        ? prev.items
-        : prev.items.map((it) => ({ ...it, currency: "IDR" as const })),
-    }));
+  const setCurrencyMode = (mode: CurrencyMode) =>
+    setData((prev) => {
+      if (mode === "usd") {
+        return {
+          ...prev,
+          usdOnly: true,
+          usesUsd: true,
+          vatEnabled: false,
+          withholdingEnabled: false,
+          items: prev.items.map((it) => ({ ...it, currency: "USD" as const })),
+        };
+      }
+      if (mode === "idr") {
+        return {
+          ...prev,
+          usdOnly: false,
+          usesUsd: false,
+          exchangeRate: 0,
+          items: prev.items.map((it) => ({ ...it, currency: "IDR" as const })),
+        };
+      }
+      return { ...prev, usdOnly: false, usesUsd: true };
+    });
 
   const setBank = (key: "bankIdr" | "bankUsd", patch: Partial<BankAccount>) =>
     setData((prev) =>
@@ -561,19 +582,20 @@ export default function InvoiceForm({
         icon="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
       >
         <Field label="Mata uang invoice">
-          <div className="grid grid-cols-2 gap-2">
+          <div className="grid grid-cols-3 gap-2">
             {(
               [
-                [true, "USD + IDR"],
-                [false, "IDR Only"],
+                ["usd_idr", "USD + IDR"],
+                ["idr", "IDR Only"],
+                ["usd", "USD Only"],
               ] as const
             ).map(([val, label]) => (
               <button
                 key={label}
                 type="button"
-                onClick={() => setUsesUsd(val)}
+                onClick={() => setCurrencyMode(val)}
                 className={`rounded-lg border px-3 py-2 text-xs font-semibold transition-colors ${
-                  usesUsd === val
+                  currencyMode === val
                     ? "border-blue-500 bg-blue-50 text-blue-700"
                     : "border-slate-300 bg-white text-slate-600 hover:bg-slate-50"
                 }`}
@@ -583,13 +605,15 @@ export default function InvoiceForm({
             ))}
           </div>
           <span className="mt-1.5 block text-[11px] text-slate-500">
-            {usesUsd
+            {currencyMode === "usd_idr"
               ? "Item bisa USD/IDR, kurs & bank USD tampil di invoice."
-              : "Semua item IDR — baris kurs & bank USD disembunyikan."}
+              : currencyMode === "idr"
+                ? "Semua item IDR — baris kurs & bank USD disembunyikan."
+                : "Semua item USD, tanpa rupiah & tanpa pajak (PPN/PPh)."}
           </span>
         </Field>
 
-        {usesUsd && (
+        {usesUsd && !usdOnly && (
           <Field label="Exchange rate (IDR per USD 1)">
             <input
               type="number"
@@ -614,7 +638,9 @@ export default function InvoiceForm({
                 <th className="pb-1 pr-2 font-medium">Curr</th>
                 <th className="pb-1 pr-2 font-medium">Price</th>
                 <th className="pb-1 pr-2 font-medium">Qty</th>
-                <th className="pb-1 pr-2 text-right font-medium">IDR Amount</th>
+                <th className="pb-1 pr-2 text-right font-medium">
+                  {usdOnly ? "USD Amount" : "IDR Amount"}
+                </th>
                 <th className="pb-1"></th>
               </tr>
             </thead>
@@ -668,7 +694,7 @@ export default function InvoiceForm({
                     />
                   </td>
                   <td className="py-1 pr-2">
-                    {usesUsd ? (
+                    {usesUsd && !usdOnly ? (
                       <select
                         className="w-[4.5rem] rounded-lg border border-slate-300 px-1 py-1.5 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
                         value={item.currency}
@@ -683,7 +709,7 @@ export default function InvoiceForm({
                       </select>
                     ) : (
                       <span className="inline-block w-[4.5rem] px-1 py-1.5 text-sm text-slate-500">
-                        IDR
+                        {usdOnly ? "USD" : "IDR"}
                       </span>
                     )}
                   </td>
@@ -714,7 +740,7 @@ export default function InvoiceForm({
                     />
                   </td>
                   <td className="py-1 pr-2 text-right font-mono text-xs text-slate-600">
-                    {fmtIdr(itemAmountIdr(item, data.exchangeRate))}
+                    {fmtMoney(itemDisplayAmount(item, data), usdOnly ? "USD" : "IDR")}
                   </td>
                   <td className="py-1">
                     <button
@@ -739,6 +765,8 @@ export default function InvoiceForm({
           + Add row
         </button>
 
+        {!usdOnly && (
+        <>
         <div className="space-y-2 pt-1">
           <label className="flex items-center gap-2 text-sm">
             <input
@@ -816,6 +844,8 @@ export default function InvoiceForm({
             </div>
           )}
         </div>
+        </>
+        )}
       </Section>
 
       <Section

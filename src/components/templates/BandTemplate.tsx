@@ -1,15 +1,18 @@
 "use client";
 
 import type { InvoiceData } from "@/lib/types";
-import { itemAmountIdr } from "@/lib/calc";
-import { fmtIdr, fmtNum, fmtDate } from "@/lib/format";
-import { amountInWords } from "@/lib/terbilang";
+import { itemDisplayAmount } from "@/lib/calc";
+import { fmtIdr, fmtNum, fmtDate, fmtMoney } from "@/lib/format";
+import { amountInWords, amountInWordsUsd } from "@/lib/terbilang";
 import { invoiceComputed } from "./shared";
 
 /** Bold red brand band header with strong totals box. */
 export default function BandTemplate({ data }: { data: InvoiceData }) {
-  const { totals, visibleItems, perCurrency, signer } = invoiceComputed(data);
-  const showUsd = data.usesUsd ?? true;
+  const { totals, visibleItems, perCurrency, signer, currency, usdOnly } =
+    invoiceComputed(data);
+  const showRate = (data.usesUsd ?? true) && !usdOnly;
+  const showUsdBank = (data.usesUsd ?? true) || usdOnly;
+  const words = usdOnly ? amountInWordsUsd(totals.total) : amountInWords(totals.total);
 
   return (
     <div
@@ -109,7 +112,7 @@ export default function BandTemplate({ data }: { data: InvoiceData }) {
               <th className="px-2 py-1.5 text-right font-bold">Price</th>
               <th className="px-2 py-1.5 text-center font-bold">Qty</th>
               <th className="px-2 py-1.5 text-right font-bold">
-                Amount (IDR)
+                Amount ({currency})
               </th>
             </tr>
           </thead>
@@ -125,7 +128,7 @@ export default function BandTemplate({ data }: { data: InvoiceData }) {
                   x {item.qty}
                 </td>
                 <td className="w-[23%] px-2 py-1.5 text-right font-medium">
-                  {fmtIdr(itemAmountIdr(item, data.exchangeRate))}
+                  {fmtMoney(itemDisplayAmount(item, data), currency)}
                 </td>
               </tr>
             ))}
@@ -136,7 +139,7 @@ export default function BandTemplate({ data }: { data: InvoiceData }) {
       {/* ===== Rates + totals ===== */}
       <div className="flex items-start justify-between px-[8mm] pt-4">
         <div className="text-[8.5pt] text-neutral-600">
-          {showUsd && (
+          {showRate && (
             <div>
               <span className="font-semibold">Exch Rate :</span> IDR{" "}
               {fmtNum(data.exchangeRate)} / USD 1
@@ -156,10 +159,10 @@ export default function BandTemplate({ data }: { data: InvoiceData }) {
         </div>
         <div className="w-[78mm] border border-neutral-400 text-[9.5pt]">
           <div className="flex justify-between px-3 py-1.5">
-            <span>Total (Excl. VAT)</span>
-            <span>IDR {fmtIdr(totals.subtotal)}</span>
+            <span>{usdOnly ? "Total" : "Total (Excl. VAT)"}</span>
+            <span>{currency} {fmtMoney(totals.subtotal, currency)}</span>
           </div>
-          {data.vatEnabled && (
+          {!usdOnly && data.vatEnabled && (
             <div className="flex justify-between border-t border-neutral-300 px-3 py-1.5">
               <span>VAT Charges {data.vatLabel}</span>
               <span>IDR {fmtIdr(totals.vat)}</span>
@@ -167,7 +170,7 @@ export default function BandTemplate({ data }: { data: InvoiceData }) {
           )}
           <div className="flex justify-between bg-red-700 px-3 py-2 text-[11pt] font-bold text-white">
             <span>TOTAL</span>
-            <span>IDR {fmtIdr(totals.total)}</span>
+            <span>{currency} {fmtMoney(totals.total, currency)}</span>
           </div>
         </div>
       </div>
@@ -175,7 +178,7 @@ export default function BandTemplate({ data }: { data: InvoiceData }) {
       {/* ===== Amount in words ===== */}
       <div className="px-[8mm] pt-3 text-[9pt]">
         <span className="font-bold">Pay : </span>
-        <span className="font-bold italic">{amountInWords(totals.total)}</span>
+        <span className="font-bold italic">{words}</span>
       </div>
 
       {/* ===== Banks + signature ===== */}
@@ -187,7 +190,9 @@ export default function BandTemplate({ data }: { data: InvoiceData }) {
               ["USD Currency", data.bankUsd],
             ] as const
           )
-            .filter(([label]) => showUsd || label !== "USD Currency")
+            .filter(([label]) =>
+              label === "USD Currency" ? showUsdBank : !usdOnly
+            )
             .map(([label, bank]) => (
             <div key={label} className="mb-2">
               <span className="font-bold italic">{label}</span> — {bank.bank}

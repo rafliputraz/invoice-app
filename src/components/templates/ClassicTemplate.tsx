@@ -1,15 +1,18 @@
 "use client";
 
 import type { InvoiceData } from "@/lib/types";
-import { itemAmountIdr } from "@/lib/calc";
-import { fmtIdr, fmtNum, fmtDate } from "@/lib/format";
-import { amountInWords } from "@/lib/terbilang";
+import { itemDisplayAmount } from "@/lib/calc";
+import { fmtIdr, fmtNum, fmtDate, fmtMoney } from "@/lib/format";
+import { amountInWords, amountInWordsUsd } from "@/lib/terbilang";
 import { LabeledLine, invoiceComputed } from "./shared";
 
 /** Faithful replica of the original SFL paper template. */
 export default function ClassicTemplate({ data }: { data: InvoiceData }) {
-  const { totals, visibleItems, perCurrency, signer } = invoiceComputed(data);
-  const showUsd = data.usesUsd ?? true;
+  const { totals, visibleItems, perCurrency, signer, currency, usdOnly } =
+    invoiceComputed(data);
+  const showRate = (data.usesUsd ?? true) && !usdOnly;
+  const showUsdBank = (data.usesUsd ?? true) || usdOnly;
+  const words = usdOnly ? amountInWordsUsd(totals.total) : amountInWords(totals.total);
 
   return (
     <div
@@ -118,9 +121,9 @@ export default function ClassicTemplate({ data }: { data: InvoiceData }) {
                   {fmtNum(item.unitPrice)}
                 </td>
                 <td className="w-[10%] py-px align-top">x {item.qty}</td>
-                <td className="w-[8%] py-px align-top">IDR</td>
+                <td className="w-[8%] py-px align-top">{currency}</td>
                 <td className="w-[22%] py-px text-right align-top">
-                  {fmtIdr(itemAmountIdr(item, data.exchangeRate))}
+                  {fmtMoney(itemDisplayAmount(item, data), currency)}
                 </td>
               </tr>
             ))}
@@ -131,7 +134,7 @@ export default function ClassicTemplate({ data }: { data: InvoiceData }) {
       {/* ===== Exchange rate + totals ===== */}
       <div className="flex border-b border-black">
         <div className="flex-1 px-3 py-1">
-          {showUsd && (
+          {showRate && (
             <div>
               Exch Rate : IDR {fmtNum(data.exchangeRate)} / USD 1
             </div>
@@ -159,13 +162,15 @@ export default function ClassicTemplate({ data }: { data: InvoiceData }) {
         </div>
         <div className="flex w-[52%] shrink-0 flex-col">
           <div className="flex border-b border-black py-0.5">
-            <span className="flex-1 pr-2 text-right">Total (Excl. VAT)</span>
-            <span className="w-12 border-l border-black pl-2">IDR</span>
+            <span className="flex-1 pr-2 text-right">
+              {usdOnly ? "Total" : "Total (Excl. VAT)"}
+            </span>
+            <span className="w-12 border-l border-black pl-2">{currency}</span>
             <span className="w-28 border-l border-black pl-1 pr-2 text-right">
-              {fmtIdr(totals.subtotal)}
+              {fmtMoney(totals.subtotal, currency)}
             </span>
           </div>
-          {data.vatEnabled && (
+          {!usdOnly && data.vatEnabled && (
             <div className="flex border-b border-black py-0.5">
               <span className="flex-1 pr-2 text-right">
                 VAT Charges {data.vatLabel}
@@ -179,10 +184,12 @@ export default function ClassicTemplate({ data }: { data: InvoiceData }) {
           {/* flex-1 stretches this row so the vertical dividers reach the
               bottom even when the left column is taller */}
           <div className="flex flex-1 py-0.5 font-bold">
-            <span className="flex-1 pr-2 text-right">Total (Incl. VAT)</span>
-            <span className="w-12 border-l border-black pl-2">IDR</span>
+            <span className="flex-1 pr-2 text-right">
+              {usdOnly ? "Total" : "Total (Incl. VAT)"}
+            </span>
+            <span className="w-12 border-l border-black pl-2">{currency}</span>
             <span className="w-28 border-l border-black pl-1 pr-2 text-right">
-              {fmtIdr(totals.total)}
+              {fmtMoney(totals.total, currency)}
             </span>
           </div>
         </div>
@@ -191,7 +198,7 @@ export default function ClassicTemplate({ data }: { data: InvoiceData }) {
       {/* ===== Amount in words ===== */}
       <div className="border-b border-black px-3 py-1">
         <span className="font-bold">Pay : </span>
-        <span className="font-bold italic">{amountInWords(totals.total)}</span>
+        <span className="font-bold italic">{words}</span>
       </div>
 
       {/* ===== Terms ===== */}
@@ -204,13 +211,19 @@ export default function ClassicTemplate({ data }: { data: InvoiceData }) {
       {/* ===== Bank details + signature ===== */}
       <div className="flex px-3 py-2">
         <div className="flex-1 text-[10pt]">
-          <div className="italic font-bold">IDR Currency</div>
-          <div>{data.bankIdr.bank}</div>
-          <div>acc no : {data.bankIdr.accNo}</div>
-          <div>acc name : {data.bankIdr.accName}</div>
-          {showUsd && (
+          {!usdOnly && (
             <>
-              <div className="mt-3 italic font-bold">USD Currency</div>
+              <div className="italic font-bold">IDR Currency</div>
+              <div>{data.bankIdr.bank}</div>
+              <div>acc no : {data.bankIdr.accNo}</div>
+              <div>acc name : {data.bankIdr.accName}</div>
+            </>
+          )}
+          {showUsdBank && (
+            <>
+              <div className={usdOnly ? "italic font-bold" : "mt-3 italic font-bold"}>
+                USD Currency
+              </div>
               <div>{data.bankUsd.bank}</div>
               <div>acc no : {data.bankUsd.accNo}</div>
               <div>acc name : {data.bankUsd.accName}</div>

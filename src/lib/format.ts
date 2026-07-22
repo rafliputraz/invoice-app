@@ -12,6 +12,19 @@ export function fmtNum(n: number, maxFrac = 2): string {
   }).format(n || 0);
 }
 
+/** US-style money with 2 decimals: 1234.5 -> "1,234.50" */
+export function fmtUsd(n: number): string {
+  return new Intl.NumberFormat("en-US", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(n || 0);
+}
+
+/** Format an amount in the given currency (USD keeps cents, IDR is whole). */
+export function fmtMoney(n: number, currency: "USD" | "IDR"): string {
+  return currency === "USD" ? fmtUsd(n) : fmtIdr(n);
+}
+
 /** "2026-07-17" -> "Jul 17, 2026" */
 export function fmtDate(iso: string): string {
   if (!iso) return "";

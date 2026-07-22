@@ -69,6 +69,11 @@ export interface InvoiceData {
    * doesn't show a meaningless "1 USD = 0 IDR".
    */
   usesUsd?: boolean;
+  /**
+   * USD-only invoice: every amount is shown in USD with no IDR conversion and
+   * no tax (VAT/PPh forced off). Overrides usesUsd for display purposes.
+   */
+  usdOnly?: boolean;
   paymentTerms: string;
   /** Payment term in days from invoiceDate; due date is derived from this. */
   dueDays?: number;
@@ -116,4 +121,8 @@ export interface InvoiceListItem {
   dueDate: string | null;
   withholdingIdr: number; // PPh withheld (0 when not applicable)
   netReceivedIdr: number; // totalIdr - withholdingIdr
+  paidAt: string | null; // payment date, set when marked paid
+  amountPaid: number | null; // cash actually received (null = not filled)
+  bupotNo: string | null; // bukti potong number
+  usdOnly: boolean; // true = amounts are USD, shown with "$" instead of "Rp"
 }

@@ -1,9 +1,9 @@
 "use client";
 
 import type { InvoiceData } from "@/lib/types";
-import { itemAmountIdr } from "@/lib/calc";
-import { fmtIdr, fmtNum, fmtDate } from "@/lib/format";
-import { amountInWords } from "@/lib/terbilang";
+import { itemDisplayAmount } from "@/lib/calc";
+import { fmtIdr, fmtNum, fmtDate, fmtMoney } from "@/lib/format";
+import { amountInWords, amountInWordsUsd } from "@/lib/terbilang";
 import { invoiceComputed } from "./shared";
 
 function MiniLabel({ children }: { children: React.ReactNode }) {
@@ -16,8 +16,11 @@ function MiniLabel({ children }: { children: React.ReactNode }) {
 
 /** Clean, airy layout with a red accent — modern studio look. */
 export default function ModernTemplate({ data }: { data: InvoiceData }) {
-  const { totals, visibleItems, perCurrency, signer } = invoiceComputed(data);
-  const showUsd = data.usesUsd ?? true;
+  const { totals, visibleItems, perCurrency, signer, currency, usdOnly } =
+    invoiceComputed(data);
+  const showRate = (data.usesUsd ?? true) && !usdOnly;
+  const showUsdBank = (data.usesUsd ?? true) || usdOnly;
+  const words = usdOnly ? amountInWordsUsd(totals.total) : amountInWords(totals.total);
 
   return (
     <div
@@ -106,7 +109,7 @@ export default function ModernTemplate({ data }: { data: InvoiceData }) {
             <th className="pb-1 font-semibold">Curr</th>
             <th className="pb-1 text-right font-semibold">Price</th>
             <th className="pb-1 text-center font-semibold">Qty</th>
-            <th className="pb-1 text-right font-semibold">Amount (IDR)</th>
+            <th className="pb-1 text-right font-semibold">Amount ({currency})</th>
           </tr>
         </thead>
         <tbody>
@@ -123,7 +126,7 @@ export default function ModernTemplate({ data }: { data: InvoiceData }) {
                 {item.qty}
               </td>
               <td className="w-[23%] py-1.5 text-right font-medium">
-                {fmtIdr(itemAmountIdr(item, data.exchangeRate))}
+                {fmtMoney(itemDisplayAmount(item, data), currency)}
               </td>
             </tr>
           ))}
@@ -133,7 +136,7 @@ export default function ModernTemplate({ data }: { data: InvoiceData }) {
       {/* ===== Rates + totals ===== */}
       <div className="flex justify-between pt-4">
         <div className="text-[8.5pt] text-neutral-500">
-          {showUsd && (
+          {showRate && (
             <div>
               Exch Rate : IDR {fmtNum(data.exchangeRate)} / USD 1
             </div>
@@ -154,10 +157,12 @@ export default function ModernTemplate({ data }: { data: InvoiceData }) {
         </div>
         <div className="w-[72mm] text-[9.5pt]">
           <div className="flex justify-between py-1">
-            <span className="text-neutral-500">Total (Excl. VAT)</span>
-            <span>IDR {fmtIdr(totals.subtotal)}</span>
+            <span className="text-neutral-500">
+              {usdOnly ? "Total" : "Total (Excl. VAT)"}
+            </span>
+            <span>{currency} {fmtMoney(totals.subtotal, currency)}</span>
           </div>
-          {data.vatEnabled && (
+          {!usdOnly && data.vatEnabled && (
             <div className="flex justify-between border-b border-neutral-200 py-1">
               <span className="text-neutral-500">
                 VAT {data.vatLabel}
@@ -166,8 +171,8 @@ export default function ModernTemplate({ data }: { data: InvoiceData }) {
             </div>
           )}
           <div className="mt-1 flex justify-between border-l-4 border-red-600 bg-neutral-50 py-2 pl-3 pr-1 text-[11pt] font-bold">
-            <span>Total (Incl. VAT)</span>
-            <span>IDR {fmtIdr(totals.total)}</span>
+            <span>{usdOnly ? "Total" : "Total (Incl. VAT)"}</span>
+            <span>{currency} {fmtMoney(totals.total, currency)}</span>
           </div>
         </div>
       </div>
@@ -175,7 +180,7 @@ export default function ModernTemplate({ data }: { data: InvoiceData }) {
       {/* ===== Amount in words ===== */}
       <div className="pt-3 text-[9pt] italic text-neutral-700">
         <span className="font-semibold not-italic">Pay : </span>
-        {amountInWords(totals.total)}
+        {words}
       </div>
 
       {/* ===== Banks + signature ===== */}
@@ -187,7 +192,9 @@ export default function ModernTemplate({ data }: { data: InvoiceData }) {
               ["USD Currency", data.bankUsd],
             ] as const
           )
-            .filter(([label]) => showUsd || label !== "USD Currency")
+            .filter(([label]) =>
+              label === "USD Currency" ? showUsdBank : !usdOnly
+            )
             .map(([label, bank]) => (
             <div
               key={label}
