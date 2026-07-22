@@ -18,18 +18,33 @@ export default function TrashPage() {
   const [rows, setRows] = useState<TrashRow[]>([]);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
+  const [selected, setSelected] = useState<Set<number>>(new Set());
+  const [purging, setPurging] = useState(false);
 
   const load = () => {
     fetch("/api/invoices/trash")
       .then(async (r) => {
         if (!r.ok) throw new Error("Only admins can view the trash");
         setRows((await r.json()) as TrashRow[]);
+        setSelected(new Set()); // clear selection — row ids may have changed
       })
       .catch((e) => setError(e instanceof Error ? e.message : "Failed"))
       .finally(() => setLoading(false));
   };
 
   useEffect(load, []);
+
+  const toggle = (id: number) =>
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+
+  const allSelected = rows.length > 0 && selected.size === rows.length;
+  const toggleAll = () =>
+    setSelected(allSelected ? new Set() : new Set(rows.map((r) => r.id)));
 
   const restore = async (row: TrashRow) => {
     const res = await fetch(`/api/invoices/${row.id}/restore`, {
@@ -42,6 +57,9 @@ export default function TrashPage() {
     load();
   };
 
+  const purgeOne = (id: number) =>
+    fetch(`/api/invoices/${id}?permanent=1`, { method: "DELETE" });
+
   const purge = async (row: TrashRow) => {
     if (
       !confirm(
@@ -49,14 +67,33 @@ export default function TrashPage() {
       )
     )
       return;
-    const res = await fetch(`/api/invoices/${row.id}?permanent=1`, {
-      method: "DELETE",
-    });
+    const res = await purgeOne(row.id);
     if (!res.ok) {
       setError("Failed to delete invoice");
       return;
     }
     load();
+  };
+
+  const purgeSelected = async () => {
+    const ids = [...selected];
+    if (ids.length === 0) return;
+    if (
+      !confirm(
+        `Hapus permanen ${ids.length} invoice terpilih? Tidak bisa dikembalikan.`
+      )
+    )
+      return;
+    setPurging(true);
+    try {
+      const results = await Promise.all(ids.map(purgeOne));
+      if (results.some((r) => !r.ok)) {
+        setError("Sebagian invoice gagal dihapus.");
+      }
+    } finally {
+      setPurging(false);
+      load();
+    }
   };
 
   return (
@@ -72,10 +109,42 @@ export default function TrashPage() {
           </div>
         )}
 
+        {/* Bulk action bar */}
+        <div className="mb-3 flex min-h-[2.25rem] items-center justify-between gap-3">
+          <span className="text-sm text-gray-600">
+            {selected.size > 0
+              ? `${selected.size} dipilih`
+              : rows.length > 0
+                ? `${rows.length} invoice di trash`
+                : ""}
+          </span>
+          {selected.size > 0 && (
+            <button
+              onClick={purgeSelected}
+              disabled={purging}
+              className="rounded-lg bg-red-600 px-3 py-1.5 text-sm font-semibold text-white hover:bg-red-700 disabled:opacity-60"
+            >
+              {purging
+                ? "Menghapus…"
+                : `Hapus permanen (${selected.size})`}
+            </button>
+          )}
+        </div>
+
         <div className="overflow-x-auto rounded-lg border border-gray-200 bg-white shadow-sm">
           <table className="w-full text-sm">
             <thead className="bg-gray-50 text-left text-xs text-gray-500">
               <tr>
+                <th className="px-4 py-2">
+                  <input
+                    type="checkbox"
+                    checked={allSelected}
+                    onChange={toggleAll}
+                    disabled={rows.length === 0}
+                    title="Pilih semua"
+                    className="cursor-pointer"
+                  />
+                </th>
                 <th className="px-4 py-2 font-medium">Invoice No</th>
                 <th className="px-4 py-2 font-medium">Date</th>
                 <th className="px-4 py-2 font-medium">Customer</th>
@@ -89,19 +158,34 @@ export default function TrashPage() {
             <tbody className="divide-y divide-gray-100">
               {loading ? (
                 <tr>
-                  <td colSpan={6} className="px-4 py-8 text-center text-gray-400">
+                  <td colSpan={7} className="px-4 py-8 text-center text-gray-400">
                     Loading…
                   </td>
                 </tr>
               ) : rows.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="px-4 py-8 text-center text-gray-400">
+                  <td colSpan={7} className="px-4 py-8 text-center text-gray-400">
                     {error ? "—" : "Trash kosong."}
                   </td>
                 </tr>
               ) : (
                 rows.map((row) => (
-                  <tr key={row.id} className="hover:bg-blue-50/40">
+                  <tr
+                    key={row.id}
+                    className={
+                      selected.has(row.id)
+                        ? "bg-red-50/60"
+                        : "hover:bg-blue-50/40"
+                    }
+                  >
+                    <td className="px-4 py-2">
+                      <input
+                        type="checkbox"
+                        checked={selected.has(row.id)}
+                        onChange={() => toggle(row.id)}
+                        className="cursor-pointer"
+                      />
+                    </td>
                     <td className="px-4 py-2">
                       <Link
                         href={`/invoices/${row.id}`}
