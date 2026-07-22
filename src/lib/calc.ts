@@ -79,7 +79,9 @@ export function computeTotals(data: InvoiceData): Totals {
   // Indonesian tax convention: VAT is truncated (floored) to whole rupiah.
   // Integer multiply-then-divide keeps the math exact (no float drift).
   const { num, den } = VAT_VARIANTS[data.vatVariant ?? "reduced"];
-  const vat = data.vatEnabled ? Math.floor((subtotal * num) / den) : 0;
+  const vat = data.vatEnabled
+  ? Math.round((subtotal * num) / den)
+  : 0;
   const total = subtotal + vat;
   // PPh (withholding) is deducted from the DPP (subtotal), not the VAT-inclusive
   // total. Only applies when the invoice is marked "kena PPh".
