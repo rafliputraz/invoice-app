@@ -85,10 +85,25 @@ function PaymentDialog({
 }: {
   inv: InvoiceListItem;
   onClose: () => void;
-  onSubmit: (p: { paidAt: string; amountPaid: number; bupotNo: string }) => void;
+  onSubmit: (p: {
+    paidAt: string;
+    amountPaid: number;
+    bupotNo: string;
+    withholdingEnabled: boolean;
+    withholdingRate: number;
+  }) => void;
 }) {
-  const net = inv.netReceivedIdr; // total - PPh, the amount expected in the bank
   const [paidAt, setPaidAt] = useState(inv.paidAt ?? todayLocal());
+  // PPh is decided here, at payment time — not in the invoice editor. Defaults
+  // to on when a cut was already recorded (editing an existing payment).
+  const [pphEnabled, setPphEnabled] = useState(inv.withholdingIdr > 0);
+  const [pphPct, setPphPct] = useState<string>(
+    String((inv.withholdingRate || 0.02) * 100)
+  );
+  const rate = (Number(pphPct) || 0) / 100;
+  const bukpot =
+    !inv.usdOnly && pphEnabled ? Math.round(inv.subtotalIdr * rate) : 0;
+  const net = inv.totalIdr - bukpot; // the amount expected in the bank
   const [amountPaid, setAmountPaid] = useState<string>(
     String(inv.amountPaid ?? net)
   );
@@ -96,6 +111,15 @@ function PaymentDialog({
 
   const paid = Number(amountPaid) || 0;
   const kurang = net - paid;
+
+  // Changing the PPh setting changes the net, so re-anchor the paid amount to it.
+  const applyPph = (enabled: boolean, pct: string) => {
+    setPphEnabled(enabled);
+    setPphPct(pct);
+    const r = (Number(pct) || 0) / 100;
+    const cut = !inv.usdOnly && enabled ? Math.round(inv.subtotalIdr * r) : 0;
+    setAmountPaid(String(inv.totalIdr - cut));
+  };
 
   return createPortal(
     <div className="app-font fixed inset-0 z-[60] flex items-center justify-center p-4">
@@ -115,11 +139,11 @@ function PaymentDialog({
               {money(inv, inv.totalIdr)}
             </dd>
           </div>
-          {!inv.usdOnly && (
+          {!inv.usdOnly && pphEnabled && (
             <div className="flex justify-between">
               <dt className="text-slate-500">Potong PPh (BUPOT)</dt>
               <dd className="font-semibold text-slate-800">
-                − {money(inv, inv.withholdingIdr)}
+                − {money(inv, bukpot)}
               </dd>
             </div>
           )}
@@ -130,6 +154,37 @@ function PaymentDialog({
         </dl>
 
         <div className="mt-4 space-y-3">
+          {!inv.usdOnly && (
+            <div className="rounded-lg border border-slate-200 p-2.5 text-xs">
+              <label className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  checked={pphEnabled}
+                  onChange={(e) => applyPph(e.target.checked, pphPct)}
+                />
+                <span className="font-medium text-slate-700">
+                  Kena PPh (dipotong customer)
+                </span>
+              </label>
+              {pphEnabled && (
+                <label className="mt-2 flex items-center gap-2 text-slate-600">
+                  <span>Tarif</span>
+                  <input
+                    type="number"
+                    step="0.1"
+                    min="0"
+                    value={pphPct}
+                    onChange={(e) => applyPph(true, e.target.value)}
+                    className="w-16 rounded border border-slate-300 px-1.5 py-0.5 text-right"
+                  />
+                  <span>%</span>
+                  <span className="text-slate-400">
+                    dari DPP = − {money(inv, bukpot)}
+                  </span>
+                </label>
+              )}
+            </div>
+          )}
           <label className="block text-xs">
             <span className="mb-1 block font-medium text-slate-600">
               Tanggal Bayar
@@ -169,19 +224,21 @@ function PaymentDialog({
                   : "Lunas (sesuai net)"}
             </span>
           </label>
-          <label className="block text-xs">
-            <span className="mb-1 block font-medium text-slate-600">
-              No. Bukti Potong{" "}
-              <span className="font-normal text-slate-400">(opsional)</span>
-            </span>
-            <input
-              type="text"
-              value={bupotNo}
-              onChange={(e) => setBupotNo(e.target.value)}
-              placeholder="mis. 0001/BP/2026"
-              className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
-            />
-          </label>
+          {!inv.usdOnly && pphEnabled && (
+            <label className="block text-xs">
+              <span className="mb-1 block font-medium text-slate-600">
+                No. Bukti Potong{" "}
+                <span className="font-normal text-slate-400">(opsional)</span>
+              </span>
+              <input
+                type="text"
+                value={bupotNo}
+                onChange={(e) => setBupotNo(e.target.value)}
+                placeholder="mis. 0001/BP/2026"
+                className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+              />
+            </label>
+          )}
         </div>
 
         <div className="mt-5 flex justify-end gap-2">
@@ -192,7 +249,15 @@ function PaymentDialog({
             Batal
           </button>
           <button
-            onClick={() => onSubmit({ paidAt, amountPaid: paid, bupotNo })}
+            onClick={() =>
+              onSubmit({
+                paidAt,
+                amountPaid: paid,
+                bupotNo: pphEnabled ? bupotNo : "",
+                withholdingEnabled: pphEnabled && !inv.usdOnly,
+                withholdingRate: rate,
+              })
+            }
             className="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-bold text-white hover:bg-emerald-700"
           >
             Simpan
@@ -343,12 +408,21 @@ function HomeInner() {
       return;
     }
     if (inv.status === next) return;
-    // Reverting to unpaid is direct; it also clears any payment record locally.
+    // Reverting to unpaid is direct; it clears the whole payment record locally,
+    // including the PPh cut (which now belongs to the payment).
     setSavingStatusId(inv.id);
     setInvoices((prev) =>
       prev.map((it) =>
         it.id === inv.id
-          ? { ...it, status: next, paidAt: null, amountPaid: null, bupotNo: null }
+          ? {
+              ...it,
+              status: next,
+              paidAt: null,
+              amountPaid: null,
+              bupotNo: null,
+              withholdingIdr: 0,
+              netReceivedIdr: it.totalIdr,
+            }
           : it
       )
     );
@@ -371,10 +445,20 @@ function HomeInner() {
   // Submit the payment dialog: PATCH the invoice to paid with its payment record.
   const submitPayment = async (
     inv: InvoiceListItem,
-    payload: { paidAt: string; amountPaid: number; bupotNo: string }
+    payload: {
+      paidAt: string;
+      amountPaid: number;
+      bupotNo: string;
+      withholdingEnabled: boolean;
+      withholdingRate: number;
+    }
   ) => {
     setPayFor(null);
     setSavingStatusId(inv.id);
+    // Mirror the server: the PPh cut is recomputed from the dialog's setting.
+    const withholdingIdr = payload.withholdingEnabled
+      ? Math.round(inv.subtotalIdr * payload.withholdingRate)
+      : 0;
     setInvoices((prev) =>
       prev.map((it) =>
         it.id === inv.id
@@ -384,6 +468,9 @@ function HomeInner() {
               paidAt: payload.paidAt || null,
               amountPaid: payload.amountPaid,
               bupotNo: payload.bupotNo || null,
+              withholdingIdr,
+              withholdingRate: payload.withholdingRate,
+              netReceivedIdr: it.totalIdr - withholdingIdr,
             }
           : it
       )
@@ -396,9 +483,8 @@ function HomeInner() {
       });
       if (!res.ok) throw new Error(`Failed (${res.status})`);
     } catch {
-      setInvoices((prev) =>
-        prev.map((it) => (it.id === inv.id ? { ...it, status: inv.status } : it))
-      );
+      // Roll the whole row back to its pre-dialog snapshot.
+      setInvoices((prev) => prev.map((it) => (it.id === inv.id ? inv : it)));
     } finally {
       setSavingStatusId(null);
     }

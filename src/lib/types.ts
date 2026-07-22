@@ -119,7 +119,9 @@ export interface InvoiceListItem {
   year: number;
   status: InvoiceStatus;
   dueDate: string | null;
+  subtotalIdr: number; // DPP (excl. VAT) — basis for the PPh cut in the paid dialog
   withholdingIdr: number; // PPh withheld (0 when not applicable)
+  withholdingRate: number; // PPh rate as decimal (0.02 = 2%)
   netReceivedIdr: number; // totalIdr - withholdingIdr
   paidAt: string | null; // payment date, set when marked paid
   amountPaid: number | null; // cash actually received (null = not filled)

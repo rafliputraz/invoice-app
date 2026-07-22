@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSessionUser } from "@/lib/auth-server";
 import { getDb, nextSeq } from "@/lib/db";
-import { computeTotals } from "@/lib/calc";
+import { computeTotals, WITHHOLDING_DEFAULT_RATE } from "@/lib/calc";
 import { dueDateOf, formatInvoiceNo, yearOf } from "@/lib/invoice-number";
 import type { InvoiceData } from "@/lib/types";
 
@@ -17,16 +17,36 @@ export async function GET() {
               seq, year, status, due_date AS dueDate,
               withholding_idr AS withholdingIdr,
               paid_at AS paidAt, amount_paid AS amountPaid, bupot_no AS bupotNo,
-              usd_only AS usdOnly
+              usd_only AS usdOnly, data
        FROM invoices WHERE deleted_at IS NULL
        ORDER BY invoice_date DESC, created_at DESC, id DESC`
     )
-    .all() as Array<{ totalIdr: number; withholdingIdr: number; usdOnly: number }>;
-  const list = rows.map((row) => ({
-    ...row,
-    usdOnly: !!row.usdOnly,
-    netReceivedIdr: row.totalIdr - row.withholdingIdr,
-  }));
+    .all() as Array<{
+    totalIdr: number;
+    withholdingIdr: number;
+    usdOnly: number;
+    data: string;
+  }>;
+  const list = rows.map(({ data, ...row }) => {
+    // The paid dialog needs the DPP (subtotal) to compute the PPh cut live,
+    // plus the stored rate as its default.
+    let subtotalIdr = row.totalIdr;
+    let withholdingRate = WITHHOLDING_DEFAULT_RATE;
+    try {
+      const parsed = JSON.parse(data) as InvoiceData;
+      subtotalIdr = computeTotals(parsed).subtotal;
+      withholdingRate = parsed.withholdingRate ?? WITHHOLDING_DEFAULT_RATE;
+    } catch {
+      // malformed data JSON — fall back to totals
+    }
+    return {
+      ...row,
+      usdOnly: !!row.usdOnly,
+      subtotalIdr,
+      withholdingRate,
+      netReceivedIdr: row.totalIdr - row.withholdingIdr,
+    };
+  });
   return NextResponse.json(list);
 }
 

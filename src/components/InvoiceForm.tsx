@@ -8,14 +8,9 @@ import type {
   LineItem,
   VatVariant,
 } from "@/lib/types";
-import {
-  computeTotals,
-  itemDisplayAmount,
-  VAT_VARIANTS,
-  WITHHOLDING_DEFAULT_RATE,
-} from "@/lib/calc";
+import { itemDisplayAmount, VAT_VARIANTS } from "@/lib/calc";
 import { DEFAULT_SIGNER } from "@/lib/defaults";
-import { fmtDate, fmtIdr, fmtMoney } from "@/lib/format";
+import { fmtDate, fmtMoney } from "@/lib/format";
 import { dueDateOf } from "@/lib/invoice-number";
 
 type Setter = (updater: (prev: InvoiceData) => InvoiceData) => void;
@@ -805,45 +800,6 @@ export default function InvoiceForm({
           )}
         </div>
 
-        <div className="space-y-2 pt-1">
-          <label className="flex items-center gap-2 text-sm">
-            <input
-              type="checkbox"
-              checked={data.withholdingEnabled ?? false}
-              onChange={(e) => set({ withholdingEnabled: e.target.checked })}
-            />
-            <span>Kena PPh (potong pajak saat dibayar)</span>
-          </label>
-          {data.withholdingEnabled && (
-            <div className="ml-6 space-y-1.5 text-xs text-slate-700">
-              <label className="flex items-center gap-2">
-                <span>Tarif PPh</span>
-                <input
-                  type="number"
-                  step="0.1"
-                  min="0"
-                  className="w-16 rounded border border-slate-300 px-1.5 py-0.5 text-right"
-                  value={(
-                    (data.withholdingRate ?? WITHHOLDING_DEFAULT_RATE) * 100
-                  ).toString()}
-                  onChange={(e) =>
-                    set({
-                      withholdingRate: (Number(e.target.value) || 0) / 100,
-                    })
-                  }
-                />
-                <span>%</span>
-                <span className="text-slate-400">
-                  dari subtotal (DPP)
-                </span>
-              </label>
-              <div className="text-slate-500">
-                Potongan: {fmtIdr(computeTotals(data).withholding)} · Diterima:{" "}
-                {fmtIdr(computeTotals(data).netReceived)}
-              </div>
-            </div>
-          )}
-        </div>
         </>
         )}
       </Section>

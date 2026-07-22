@@ -117,6 +117,8 @@ export async function PATCH(req: NextRequest, { params }: Params) {
     paidAt?: string | null;
     amountPaid?: number | null;
     bupotNo?: string | null;
+    withholdingEnabled?: boolean;
+    withholdingRate?: number;
   };
   const { status } = body;
   if (status !== "paid" && status !== "unpaid") {
@@ -127,9 +129,15 @@ export async function PATCH(req: NextRequest, { params }: Params) {
   }
 
   const db = getDb();
-  let result;
+  const row = db
+    .prepare("SELECT data FROM invoices WHERE id = ? AND deleted_at IS NULL")
+    .get(Number(id)) as { data: string } | undefined;
+  if (!row) {
+    return NextResponse.json({ error: "Not found" }, { status: 404 });
+  }
+
   if (status === "paid") {
-    // Capture the payment record. All three are optional; amount_paid is left
+    // Capture the payment record. All fields are optional; amount_paid is left
     // NULL when not supplied (the recap then defaults it to the net receivable).
     const paidAt =
       typeof body.paidAt === "string" && body.paidAt.trim()
@@ -145,27 +153,48 @@ export async function PATCH(req: NextRequest, { params }: Params) {
       typeof body.bupotNo === "string" && body.bupotNo.trim()
         ? body.bupotNo.trim()
         : null;
-    result = db
-      .prepare(
-        `UPDATE invoices
-         SET status = 'paid', paid_at = ?, amount_paid = ?, bupot_no = ?,
-             updated_at = datetime('now', 'localtime')
-         WHERE id = ? AND deleted_at IS NULL`
-      )
-      .run(paidAt, amountPaid, bupotNo, Number(id));
+
+    // PPh is decided in the paid dialog. Persist the flag/rate into the data
+    // JSON (so a later PUT/save recomputes the same figure) and refresh the
+    // denormalized withholding_idr from it. USD-only invoices carry no tax.
+    const data = JSON.parse(row.data) as InvoiceData;
+    if (typeof body.withholdingEnabled === "boolean" && !data.usdOnly) {
+      data.withholdingEnabled = body.withholdingEnabled;
+      if (
+        typeof body.withholdingRate === "number" &&
+        body.withholdingRate >= 0 &&
+        body.withholdingRate < 1
+      ) {
+        data.withholdingRate = body.withholdingRate;
+      }
+    }
+    const { withholding } = computeTotals(data);
+    db.prepare(
+      `UPDATE invoices
+       SET status = 'paid', paid_at = ?, amount_paid = ?, bupot_no = ?,
+           withholding_idr = ?, data = ?,
+           updated_at = datetime('now', 'localtime')
+       WHERE id = ? AND deleted_at IS NULL`
+    ).run(
+      paidAt,
+      amountPaid,
+      bupotNo,
+      withholding,
+      JSON.stringify(data),
+      Number(id)
+    );
   } else {
-    // Reverting to unpaid clears the payment record.
-    result = db
-      .prepare(
-        `UPDATE invoices
-         SET status = 'unpaid', paid_at = NULL, amount_paid = NULL, bupot_no = NULL,
-             updated_at = datetime('now', 'localtime')
-         WHERE id = ? AND deleted_at IS NULL`
-      )
-      .run(Number(id));
-  }
-  if (result.changes === 0) {
-    return NextResponse.json({ error: "Not found" }, { status: 404 });
+    // Reverting to unpaid clears the whole payment record — including the PPh
+    // cut, which is part of the payment (it is re-entered on the next paid).
+    const data = JSON.parse(row.data) as InvoiceData;
+    data.withholdingEnabled = false;
+    db.prepare(
+      `UPDATE invoices
+       SET status = 'unpaid', paid_at = NULL, amount_paid = NULL, bupot_no = NULL,
+           withholding_idr = 0, data = ?,
+           updated_at = datetime('now', 'localtime')
+       WHERE id = ? AND deleted_at IS NULL`
+    ).run(JSON.stringify(data), Number(id));
   }
   return NextResponse.json({ id: Number(id), status });
 }
