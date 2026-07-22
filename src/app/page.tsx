@@ -853,14 +853,14 @@ function HomeInner() {
         />
         <StatCard
           label="Total This Month"
-          value={fmtIdr(stats.monthTotal)}
+          value={`Rp ${fmtIdr(stats.monthTotal)}`}
           usd={stats.monthTotalUsd}
           sub="nilai invoice bulan ini (IDR)"
           icon="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
         />
         <StatCard
           label="Outstanding"
-          value={fmtIdr(stats.outstanding)}
+          value={`Rp ${fmtIdr(stats.outstanding)}`}
           usd={stats.outstandingUsd}
           sub={
             stats.outstandingCount > 0
@@ -872,7 +872,7 @@ function HomeInner() {
         />
         <StatCard
           label="Overdue"
-          value={fmtIdr(stats.overdueTotal)}
+          value={`Rp ${fmtIdr(stats.overdueTotal)}`}
           sub={
             stats.overdueCount > 0
               ? `${stats.overdueCount} invoice perlu ditagih`
@@ -883,7 +883,7 @@ function HomeInner() {
         />
         <StatCard
           label="Total Diterima"
-          value={fmtIdr(stats.totalReceived)}
+          value={`Rp ${fmtIdr(stats.totalReceived)}`}
           usd={stats.totalReceivedUsd}
           sub={
             stats.paidCount > 0
