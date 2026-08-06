@@ -1,13 +1,27 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
+import gsap from "gsap";
+import { useGSAP } from "@gsap/react";
 import HelpGuide from "./HelpGuide";
 import ChangePassword from "./ChangePassword";
 import IdleLogout from "./IdleLogout";
 import NewInvoiceButton from "./NewInvoiceButton";
-import Image from "next/image";
+import {
+  IconAlert,
+  IconClose,
+  IconCompany,
+  IconLogout,
+  IconMenu,
+  IconRegister,
+  IconTrash,
+  IconUser,
+} from "./Icons";
+
+gsap.registerPlugin(useGSAP);
 
 interface Me {
   username: string;
@@ -17,57 +31,54 @@ interface Me {
 
 export type NavKey = "invoices" | "customers" | "users" | "trash";
 
-function NavIcon({ path }: { path: string }) {
-  return (
-    <svg
-      className="mr-3 h-5 w-5 opacity-70"
-      fill="none"
-      stroke="currentColor"
-      viewBox="0 0 24 24"
-    >
-      <path
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        strokeWidth="2"
-        d={path}
-      />
-    </svg>
-  );
-}
-
-const ICONS: Record<NavKey, string> = {
-  invoices:
-    "M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z",
-  customers:
-    "M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z",
-  users:
-    "M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z",
-  trash:
-    "M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16",
-};
-
 export default function AppShell({
   active,
   title,
   subtitle,
-  invoiceCount,
-  bellDot,
-  onBellClick,
+  overdueDot,
+  onOverdueClick,
   children,
 }: {
   active: NavKey;
   title: string;
   subtitle?: string;
-  /** Badge on the Invoices nav item (homepage passes the live count). */
-  invoiceCount?: number;
-  /** Show a red dot on the bell; clicking calls onBellClick. */
-  bellDot?: boolean;
-  onBellClick?: () => void;
+  /** Light the overdue bell; clicking calls onOverdueClick. */
+  overdueDot?: boolean;
+  onOverdueClick?: () => void;
   children: React.ReactNode;
 }) {
   const router = useRouter();
   const [me, setMe] = useState<Me | null>(null);
   const [drawer, setDrawer] = useState(false);
+
+  /* The chrome arrives once, ahead of the page: the mark, then the nav down
+     the rail, then the bar's controls. It never replays on navigation — the
+     shell persists, only the page inside it changes. */
+  const shell = useRef<HTMLDivElement>(null);
+  useGSAP(
+    () => {
+      const mm = gsap.matchMedia();
+      mm.add({ animate: "(prefers-reduced-motion: no-preference)" }, (ctx) => {
+        if (!ctx.conditions?.animate) return;
+        gsap
+          .timeline({ defaults: { ease: "power3.out" } })
+          .from(".brand-mark", { x: -14, autoAlpha: 0, duration: 0.5 })
+          .from(
+            ".rail-nav > *",
+            { x: -12, autoAlpha: 0, duration: 0.4, stagger: 0.055 },
+            0.08
+          )
+          .from(".rail-help", { y: 14, autoAlpha: 0, duration: 0.45 }, 0.3)
+          .from(
+            ".bar-tools > *",
+            { y: -10, autoAlpha: 0, duration: 0.4, stagger: 0.06 },
+            0.12
+          );
+      });
+      return () => mm.revert();
+    },
+    { scope: shell }
+  );
 
   useEffect(() => {
     fetch("/api/auth/me")
@@ -95,220 +106,167 @@ export default function AppShell({
     key: NavKey,
     href: string,
     label: string,
-    extra?: React.ReactNode,
-    dataTour?: string
-  ) =>
-    active === key ? (
-      <div className="relative" key={key}>
-        <div className="absolute inset-y-1 left-0 w-1 rounded-r-full bg-blue-500 shadow-[0_0_10px_rgba(59,130,246,0.6)]" />
-        <Link
-          href={href}
-          data-tour={dataTour}
-          className="ml-1 flex items-center rounded-lg bg-slate-800/80 px-3 py-2.5 text-sm font-semibold text-white"
-        >
-          <span className="text-blue-400">
-            <NavIcon path={ICONS[key]} />
-          </span>
-          {label}
-          {extra}
-        </Link>
-      </div>
-    ) : (
-      <Link
-        key={key}
-        href={href}
-        data-tour={dataTour}
-        className="flex items-center rounded-lg px-3 py-2.5 text-sm font-medium text-slate-400 transition-colors hover:bg-slate-800/50 hover:text-white"
-      >
-        <NavIcon path={ICONS[key]} />
-        {label}
-        {extra}
-      </Link>
-    );
-
-  const countBadge =
-    invoiceCount !== undefined ? (
-      <span className="ml-auto rounded-full border border-blue-500/30 bg-blue-500/20 px-2 py-0.5 text-[10px] font-bold text-blue-300">
-        {invoiceCount}
-      </span>
-    ) : undefined;
+    Icon: (p: { className?: string }) => React.ReactElement,
+    tour?: string
+  ) => (
+    <Link
+      key={key}
+      href={href}
+      data-tour={tour}
+      aria-current={active === key ? "page" : undefined}
+      onClick={() => setDrawer(false)}
+      className="navitem"
+    >
+      <Icon className="h-[18px] w-[18px] shrink-0" />
+      <span className="truncate">{label}</span>
+    </Link>
+  );
 
   const sidebar = (
     <>
-      {/* Logo */}
-      <div className="mt-2 flex h-16 items-center px-6">
-        <div className="mr-3 flex h-11 w-11 items-center justify-center rounded-xl bg-white p-1.5 shadow-md ring-1 ring-white/20">
-          <Image
-            src="/logo-sfl.png"
-            alt="Salam Fortuna Logistik"
-            width={40}
-            height={40}
-            className="h-full w-full object-contain"
-          />
-        </div>
-        <div className="flex flex-col">
-          <span className="text-base leading-tight font-bold tracking-tight text-white">
+      {/* The company mark is red on white — on a white sidebar it finally sits
+          where it belongs, at full strength. */}
+      <div className="brand-mark flex items-center gap-2.5 px-5 pt-5 pb-6">
+        <Image
+          src="/logo-sfl.png"
+          alt=""
+          width={36}
+          height={36}
+          className="h-9 w-9 shrink-0 object-contain"
+          priority
+        />
+        <div className="min-w-0 leading-tight">
+          <p className="truncate text-[15px] font-extrabold tracking-[-0.02em] text-ink">
+            SFL
+          </p>
+          <p className="truncate text-[11px] font-medium text-ink-3">
             Salam Fortuna Logistik
-          </span>
-          <span className="text-[10px] font-medium tracking-wider text-slate-500 uppercase">
-            App
-          </span>
+          </p>
         </div>
+        <button
+          onClick={() => setDrawer(false)}
+          aria-label="Close menu"
+          className="btn btn-quiet ml-auto p-1.5 lg:hidden"
+        >
+          <IconClose className="h-5 w-5" />
+        </button>
       </div>
 
-      {/* Nav */}
-      <div className="flex-1 overflow-y-auto px-4 py-8">
-        <nav className="space-y-1">
-          {item("invoices", "/", "Invoices", countBadge)}
-          {item("customers", "/customers", "Customers", undefined, "customers")}
-        </nav>
+      <nav className="rail-nav flex-1 space-y-1 overflow-y-auto px-3">
+        {item("invoices", "/", "Dashboard", IconRegister)}
+        {item("customers", "/customers", "Customers", IconCompany, "customers")}
+        {me?.role === "admin" && item("users", "/users", "Users", IconUser)}
+        {me?.role === "admin" && item("trash", "/trash", "Trash", IconTrash)}
+      </nav>
 
-        <div className="mt-10 mb-3 px-3 text-xs font-semibold tracking-wider text-slate-500 uppercase">
-          Lainnya
-        </div>
-        <nav className="space-y-1">
-          {me?.role === "admin" && item("users", "/users", "Users")}
-          {me?.role === "admin" && item("trash", "/trash", "Trash")}
-          <HelpGuide variant="sidebar" />
-        </nav>
-      </div>
-
-      {/* Profile */}
-      <div className="m-4 rounded-xl border border-slate-800 bg-slate-900 p-4">
-        <div className="flex items-center gap-3">
-          <div className="relative shrink-0">
-            <div className="flex h-10 w-10 items-center justify-center rounded-full border border-slate-700 bg-slate-800 text-xs font-bold text-slate-200">
-              {initials}
-            </div>
-            <div className="absolute right-0 bottom-0 h-3 w-3 rounded-full border-2 border-slate-900 bg-emerald-500" />
+      {/* Help, given a real home rather than a buried icon. */}
+      <div className="rail-help p-3">
+        <div className="rounded-xl bg-brand-soft p-4">
+          <p className="text-[13px] font-bold text-brand">Need a hand?</p>
+          <p className="mt-1 text-[12px] leading-snug text-ink-2">
+            A step-by-step walkthrough of every part of the app.
+          </p>
+          <div className="mt-3">
+            <HelpGuide variant="sidebar" />
           </div>
-          <div className="flex min-w-0 flex-1 flex-col">
-            <span className="truncate text-sm font-bold text-white">
-              {displayName}
-            </span>
-            <span className="truncate text-[11px] text-slate-400">
-              {me?.role === "admin" ? "Administrator" : "Member"}
-            </span>
-          </div>
-          <ChangePassword />
-          <button
-            onClick={logout}
-            title="Logout"
-            className="rounded p-1.5 text-slate-500 transition-colors hover:bg-slate-800 hover:text-white"
-          >
-            <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth="2"
-                d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"
-              />
-            </svg>
-          </button>
         </div>
       </div>
     </>
   );
 
   return (
-    <div className="app-font flex h-screen overflow-hidden bg-slate-50 text-slate-800 antialiased selection:bg-blue-100 selection:text-blue-900">
+    <div
+      ref={shell}
+      className="app-font flex min-h-screen bg-bg text-ink antialiased"
+    >
       <IdleLogout />
-      {/* Desktop sidebar */}
-      <aside className="relative z-20 hidden h-full w-[260px] shrink-0 flex-col bg-slate-950 text-slate-300 md:flex">
+
+      {/* Sidebar */}
+      <aside className="sticky top-0 hidden h-screen w-[248px] shrink-0 flex-col border-r border-line bg-card lg:flex">
         {sidebar}
       </aside>
 
       {/* Mobile drawer */}
       {drawer && (
-        <div className="fixed inset-0 z-40 md:hidden">
+        <div className="fixed inset-0 z-50 lg:hidden">
           <div
-            className="absolute inset-0 bg-black/50"
+            className="absolute inset-0 bg-ink/40"
             onClick={() => setDrawer(false)}
           />
-          <aside className="absolute inset-y-0 left-0 flex w-[260px] flex-col bg-slate-950 text-slate-300 shadow-2xl">
+          <aside className="absolute inset-y-0 left-0 flex w-[262px] flex-col bg-card shadow-pop">
             {sidebar}
           </aside>
         </div>
       )}
 
-      {/* Main */}
-      <main className="relative flex h-screen flex-1 flex-col overflow-hidden">
+      <div className="flex min-w-0 flex-1 flex-col">
         {/* Top bar */}
-        <header className="sticky top-0 z-10 flex h-16 shrink-0 items-center justify-between border-b border-slate-200/80 bg-white/70 px-4 backdrop-blur-xl md:px-8">
-          <div className="flex items-center gap-3">
-            <button
-              onClick={() => setDrawer(true)}
-              className="rounded-lg p-2 text-slate-500 hover:bg-slate-100 md:hidden"
-              title="Menu"
-            >
-              <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth="2"
-                  d="M4 6h16M4 12h16M4 18h16"
-                />
-              </svg>
-            </button>
-            <nav className="flex text-sm font-medium text-slate-500">
-              <span className="hidden sm:inline">Home</span>
-              <svg
-                className="mx-1 hidden h-4 w-4 self-center text-slate-300 sm:block"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth="2"
-                  d="M9 5l7 7-7 7"
-                />
-              </svg>
-              <span className="font-semibold text-slate-900">{title}</span>
-            </nav>
+        <header className="sticky top-0 z-30 flex min-h-[68px] flex-wrap items-center gap-3 border-b border-line bg-bg/85 px-4 py-3 backdrop-blur md:px-7">
+          <button
+            onClick={() => setDrawer(true)}
+            aria-label="Open menu"
+            className="btn btn-quiet -ml-1 p-2 lg:hidden"
+          >
+            <IconMenu className="h-5 w-5" />
+          </button>
+
+          <div className="min-w-0 flex-1">
+            <h1 className="truncate text-[19px] font-extrabold tracking-[-0.025em] text-ink md:text-[21px]">
+              {title}
+            </h1>
+            {subtitle && (
+              <p className="truncate text-[12.5px] text-ink-2">{subtitle}</p>
+            )}
           </div>
 
-          <div className="flex items-center gap-3 md:gap-5">
-            {onBellClick && (
+          <div className="bar-tools flex shrink-0 items-center gap-2">
+            {onOverdueClick && (
               <button
-                onClick={onBellClick}
-                title="Lihat invoice overdue"
-                className="relative rounded-full p-2 text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-600"
+                onClick={onOverdueClick}
+                title="Show overdue invoices"
+                aria-label="Show overdue invoices"
+                className="btn btn-quiet relative p-2"
               >
-                <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth="2"
-                    d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"
+                <IconAlert className="h-[18px] w-[18px]" />
+                {overdueDot && (
+                  <span
+                    aria-hidden
+                    className="absolute top-1.5 right-1.5 h-2 w-2 rounded-full bg-overdue ring-2 ring-bg"
                   />
-                </svg>
-                {bellDot && (
-                  <span className="absolute top-1.5 right-1.5 h-2 w-2 rounded-full border-2 border-white bg-rose-500" />
                 )}
               </button>
             )}
+
+            <div className="hidden items-center gap-2 rounded-full bg-card py-1 pr-3 pl-1 shadow-card sm:flex">
+              <span
+                aria-hidden
+                className="flex h-7 w-7 items-center justify-center rounded-full bg-brand text-[11px] font-bold text-white"
+              >
+                {initials}
+              </span>
+              <span className="max-w-[14ch] truncate text-[13px] font-semibold text-ink">
+                {displayName}
+              </span>
+              <ChangePassword />
+              <button
+                onClick={logout}
+                title="Sign out"
+                aria-label="Sign out"
+                className="btn btn-quiet -mr-1.5 p-1.5"
+              >
+                <IconLogout className="h-4 w-4" />
+              </button>
+            </div>
+
             <NewInvoiceButton />
           </div>
         </header>
 
-        {/* Content */}
-        <div className="relative flex-1 overflow-y-auto p-4 md:p-8">
-          <div className="mx-auto max-w-[1400px]">
-            <div className="mb-6">
-              <h2 className="text-2xl font-extrabold tracking-tight text-slate-900">
-                {title}
-              </h2>
-              {subtitle && (
-                <p className="mt-1 text-sm text-slate-500">{subtitle}</p>
-              )}
-            </div>
-            {children}
-            <div className="h-12" />
-          </div>
-        </div>
-      </main>
+        <main className="min-w-0 flex-1 px-4 py-5 md:px-7 md:py-6">
+          {children}
+          <div className="h-8" />
+        </main>
+      </div>
     </div>
   );
 }

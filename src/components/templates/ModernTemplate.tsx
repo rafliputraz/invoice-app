@@ -198,7 +198,7 @@ export default function ModernTemplate({ data }: { data: InvoiceData }) {
             .map(([label, bank]) => (
             <div
               key={label}
-              className="rounded-md border border-neutral-200 p-2.5 text-[8.5pt]"
+              className="rounded-none border border-neutral-200 p-2.5 text-[8.5pt]"
             >
               <MiniLabel>{label}</MiniLabel>
               <div className="font-medium">{bank.bank}</div>

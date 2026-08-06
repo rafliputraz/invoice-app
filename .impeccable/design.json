@@ -1,0 +1,383 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-08-05T00:00:00Z",
+  "title": "Design System: SFL Invoice Register",
+  "extensions": {
+    "colorMeta": {
+      "paper": {
+        "role": "neutral",
+        "displayName": "Open Water Paper",
+        "canonical": "#fbfaf6",
+        "tonalRamp": ["#26251f", "#3d3b32", "#57544a", "#7a7669", "#a4a094", "#cbc8bd", "#e8e5dd", "#fbfaf6"]
+      },
+      "water": {
+        "role": "neutral",
+        "displayName": "Recessed Water",
+        "canonical": "#f1f3ef",
+        "tonalRamp": ["#23261f", "#3a3e35", "#54594e", "#767b70", "#a0a599", "#c8ccc3", "#e2e6de", "#f1f3ef"]
+      },
+      "land": {
+        "role": "neutral",
+        "displayName": "Land Plate",
+        "canonical": "#e6dcc1",
+        "tonalRamp": ["#2d2718", "#453d27", "#605639", "#83764f", "#ab9c6f", "#cbbe98", "#e6dcc1", "#f5efdf"]
+      },
+      "land-pale": {
+        "role": "neutral",
+        "displayName": "Pale Land",
+        "canonical": "#f0e9d6",
+        "tonalRamp": ["#2f2a1b", "#47412b", "#635a3e", "#867b55", "#ada175", "#cdc39f", "#e5dcc2", "#f0e9d6"]
+      },
+      "land-edge": {
+        "role": "neutral",
+        "displayName": "Plate Edge",
+        "canonical": "#c7b98f",
+        "tonalRamp": ["#282216", "#3e3623", "#584d33", "#786a48", "#9d8c62", "#c7b98f", "#ded3b3", "#efe9d6"]
+      },
+      "ink": {
+        "role": "primary",
+        "displayName": "Chart Ink",
+        "canonical": "#1a1c1a",
+        "tonalRamp": ["#000000", "#0d0e0d", "#1a1c1a", "#33362f", "#555a53", "#8b8f86", "#c2c5bc", "#eceee9"]
+      },
+      "ink-2": {
+        "role": "neutral",
+        "displayName": "Secondary Lettering",
+        "canonical": "#555a53",
+        "tonalRamp": ["#111310", "#22251f", "#373b34", "#555a53", "#767b72", "#9ba095", "#c6cabf", "#e9ebe6"]
+      },
+      "ink-3": {
+        "role": "neutral",
+        "displayName": "Tertiary Lettering",
+        "canonical": "#6b7069",
+        "tonalRamp": ["#161814", "#292c26", "#40443c", "#565b51", "#6b7069", "#969b91", "#c3c7bd", "#e8eae5"]
+      },
+      "rule": {
+        "role": "neutral",
+        "displayName": "Hairline Rule",
+        "canonical": "#c6c3b6",
+        "tonalRamp": ["#26251f", "#3b3a31", "#545247", "#75725f", "#9d9a86", "#c6c3b6", "#dedbd0", "#f0eee8"]
+      },
+      "rule-soft": {
+        "role": "neutral",
+        "displayName": "Soft Rule",
+        "canonical": "#e3e0d4",
+        "tonalRamp": ["#2a2921", "#403e33", "#5a5747", "#7c7862", "#a49f85", "#c8c4ae", "#e3e0d4", "#f4f2ea"]
+      },
+      "rule-strong": {
+        "role": "neutral",
+        "displayName": "Boundary Rule",
+        "canonical": "#1a1c1a",
+        "tonalRamp": ["#000000", "#0d0e0d", "#1a1c1a", "#33362f", "#555a53", "#8b8f86", "#c2c5bc", "#eceee9"]
+      },
+      "shoal": {
+        "role": "secondary",
+        "displayName": "Shoal Cyan",
+        "canonical": "#8fcddb",
+        "tonalRamp": ["#0c2a31", "#134048", "#1a5765", "#237486", "#3f97a9", "#6ab6c7", "#8fcddb", "#dcedf2"]
+      },
+      "shoal-pale": {
+        "role": "secondary",
+        "displayName": "Shoal Wash",
+        "canonical": "#dcedf2",
+        "tonalRamp": ["#0e2b31", "#154249", "#1d5a64", "#277883", "#469aa6", "#77bcc7", "#aed8e1", "#dcedf2"]
+      },
+      "shoal-ink": {
+        "role": "secondary",
+        "displayName": "Shoal Deep",
+        "canonical": "#17505e",
+        "tonalRamp": ["#072026", "#0e3540", "#17505e", "#1f6b7c", "#2e8c9f", "#5aaebe", "#93cdd9", "#d6ecf1"]
+      },
+      "caution": {
+        "role": "tertiary",
+        "displayName": "Caution Magenta",
+        "canonical": "#d6006f",
+        "tonalRamp": ["#3a001e", "#57002d", "#75003d", "#93004d", "#b4005d", "#d6006f", "#f04b9c", "#fbe3ef"]
+      },
+      "caution-pale": {
+        "role": "tertiary",
+        "displayName": "Caution Wash",
+        "canonical": "#fbe3ef",
+        "tonalRamp": ["#3d0020", "#5c0030", "#7c0040", "#9c0051", "#c00064", "#e33f8d", "#f394be", "#fbe3ef"]
+      },
+      "cleared": {
+        "role": "secondary",
+        "displayName": "Drying Green",
+        "canonical": "#2c6a4c",
+        "tonalRamp": ["#0b2117", "#123424", "#1c4a33", "#235539", "#2c6a4c", "#438f68", "#78b795", "#dcebe2"]
+      },
+      "cleared-pale": {
+        "role": "secondary",
+        "displayName": "Drying Wash",
+        "canonical": "#dcebe2",
+        "tonalRamp": ["#0c2318", "#143726", "#1e4d35", "#286546", "#35855c", "#5ba57e", "#98c8ad", "#dcebe2"]
+      },
+      "sand": {
+        "role": "tertiary",
+        "displayName": "Sand",
+        "canonical": "#96660b",
+        "tonalRamp": ["#2b1d03", "#412c05", "#5a3d07", "#75500a", "#96660b", "#bd851f", "#dcac52", "#f6ead4"]
+      },
+      "sand-pale": {
+        "role": "tertiary",
+        "displayName": "Sand Wash",
+        "canonical": "#f6ead4",
+        "tonalRamp": ["#2e1f04", "#452f06", "#5f4108", "#7c550b", "#9d6f12", "#c39434", "#e0bd7e", "#f6ead4"]
+      }
+    },
+    "typographyMeta": {
+      "display": {
+        "displayName": "Display",
+        "purpose": "The page heading, once per sheet, on its own paper ground."
+      },
+      "sounding": {
+        "displayName": "Sounding (large)",
+        "purpose": "The title block's four figures. Never wraps between currency mark and figure; scales down instead."
+      },
+      "title": {
+        "displayName": "Title",
+        "purpose": "Sheet heads, dialog titles, section heads."
+      },
+      "body": {
+        "displayName": "Body",
+        "purpose": "Table content and form values, tabular figures on by default. Prose capped at 68ch."
+      },
+      "note": {
+        "displayName": "Water lettering",
+        "purpose": "Dates, due timings, placeholders, subtitles, sheet feet — anything that drifts."
+      },
+      "label": {
+        "displayName": "Feature label",
+        "purpose": "Condensed tracked caps for column heads, nav section heads, field labels, legends."
+      },
+      "chip": {
+        "displayName": "Chip",
+        "purpose": "Status words only. Never used for anything that is not a state."
+      },
+      "control": {
+        "displayName": "Control",
+        "purpose": "Button lettering."
+      }
+    },
+    "shadows": [
+      {
+        "name": "lift",
+        "value": "0 10px 28px -12px rgba(26, 28, 26, 0.34)",
+        "purpose": "The system's only elevation. Dialogs, the mobile nav drawer, and the signed-out login plate. A real offset cast, never a halo. Nothing in the document plane may use it."
+      }
+    ],
+    "motion": [
+      {
+        "name": "tide-redraw",
+        "value": "520ms cubic-bezier(0.16, 1, 0.3, 1) — transform: scaleY(0) → scaleY(1), origin top",
+        "purpose": "The one authored moment. Recording a payment re-sounds the row: its depth band is redrawn top to bottom. Fires once, on the row whose payment status changed, and nowhere else."
+      },
+      {
+        "name": "sounding-settle",
+        "value": "320ms cubic-bezier(0.16, 1, 0.3, 1) — opacity 0→1, translateY(-2px)→0",
+        "purpose": "Shared entrance convention for overlaying surfaces (dialogs, popovers). A convention, not a second authored moment."
+      },
+      {
+        "name": "state-transition",
+        "value": "120-140ms ease-out",
+        "purpose": "Background, colour and border only, on buttons, fields and checkboxes. No transform, no lift."
+      },
+      {
+        "name": "reduced-motion",
+        "value": "prefers-reduced-motion: reduce → all animation and transition durations collapse to 0.01ms",
+        "purpose": "Global override; no motion is exempt."
+      }
+    ],
+    "breakpoints": [
+      { "name": "sm", "value": "640px" },
+      { "name": "md", "value": "768px" }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "The definite action. Solid ink, because the darkest mark on a chart is the most definite one — and because it leaves magenta free to mean overdue.",
+      "html": "<button class=\"ds-btn ds-btn-primary\">Record payment</button>",
+      "css": ".ds-btn { display: inline-flex; align-items: center; justify-content: center; gap: 0.45rem; border: 1px solid var(--color-rule-strong, #1a1c1a); background: var(--color-paper, #fbfaf6); color: var(--color-ink, #1a1c1a); padding: 0.5rem 0.9rem; font-family: Archivo, 'Helvetica Neue', Arial, sans-serif; font-size: 0.8125rem; font-weight: 600; font-stretch: 88%; letter-spacing: 0.02em; border-radius: 0; transition: background-color 140ms ease-out, color 140ms ease-out; } .ds-btn-primary { background: var(--color-ink, #1a1c1a); border-color: var(--color-ink, #1a1c1a); color: var(--color-paper, #fbfaf6); } .ds-btn-primary:hover { background: #000; border-color: #000; } .ds-btn-primary:focus-visible { outline: 2px solid var(--color-ink, #1a1c1a); outline-offset: 2px; }"
+    },
+    {
+      "name": "Default Button",
+      "kind": "button",
+      "refersTo": "button",
+      "description": "The ruled default: paper ground, ink hairline, condensed lettering. Hovers to pale land.",
+      "html": "<button class=\"ds-btn ds-btn-default\">Export CSV</button>",
+      "css": ".ds-btn-default { display: inline-flex; align-items: center; justify-content: center; gap: 0.45rem; border: 1px solid var(--color-rule-strong, #1a1c1a); background: var(--color-paper, #fbfaf6); color: var(--color-ink, #1a1c1a); padding: 0.5rem 0.9rem; font-family: Archivo, 'Helvetica Neue', Arial, sans-serif; font-size: 0.8125rem; font-weight: 600; font-stretch: 88%; letter-spacing: 0.02em; border-radius: 0; transition: background-color 140ms ease-out, color 140ms ease-out; } .ds-btn-default:hover { background: var(--color-land-pale, #f0e9d6); } .ds-btn-default:focus-visible { outline: 2px solid var(--color-ink, #1a1c1a); outline-offset: 2px; } .ds-btn-default:disabled { color: var(--color-ink-3, #6b7069); border-color: var(--color-rule, #c6c3b6); background: var(--color-water, #f1f3ef); cursor: not-allowed; }"
+    },
+    {
+      "name": "Quiet Icon Button",
+      "kind": "button",
+      "refersTo": "button-quiet",
+      "description": "Every icon-only control in the chrome. Transparent at rest, recessed water on hover. Conventional icon geometry, never a chart symbol.",
+      "html": "<button class=\"ds-btn-quiet\" aria-label=\"Search\"><svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.5\" stroke-linecap=\"square\" stroke-linejoin=\"miter\" aria-hidden=\"true\"><circle cx=\"10.5\" cy=\"10.5\" r=\"6\"/><path d=\"M15 15l4.5 4.5\"/></svg></button>",
+      "css": ".ds-btn-quiet { display: inline-flex; align-items: center; justify-content: center; border: 1px solid transparent; background: transparent; color: var(--color-ink-2, #555a53); padding: 0.5rem; border-radius: 0; transition: background-color 140ms ease-out, color 140ms ease-out; } .ds-btn-quiet svg { width: 20px; height: 20px; } .ds-btn-quiet:hover { background: var(--color-water, #f1f3ef); color: var(--color-ink, #1a1c1a); } .ds-btn-quiet:focus-visible { outline: 2px solid var(--color-ink, #1a1c1a); outline-offset: 2px; }"
+    },
+    {
+      "name": "Field",
+      "kind": "input",
+      "refersTo": "field",
+      "description": "Square, hairline-ruled, tabular figures, italic placeholder. Focus doubles the hairline in ink — not a glow, and never magenta.",
+      "html": "<label class=\"ds-field-label\">Amount received</label><input class=\"ds-field\" placeholder=\"0\" />",
+      "css": ".ds-field-label { display: block; margin-bottom: 0.375rem; font-family: Archivo, 'Helvetica Neue', Arial, sans-serif; font-size: 0.6875rem; font-weight: 600; font-stretch: 78%; text-transform: uppercase; letter-spacing: 0.11em; line-height: 1.2; color: var(--color-ink-2, #555a53); } .ds-field { display: block; width: 100%; border: 1px solid var(--color-rule, #c6c3b6); background: var(--color-paper, #fbfaf6); color: var(--color-ink, #1a1c1a); padding: 0.5rem 0.7rem; font-family: Archivo, 'Helvetica Neue', Arial, sans-serif; font-size: 0.875rem; font-variant-numeric: tabular-nums; border-radius: 0; transition: border-color 140ms ease-out, background-color 140ms ease-out; } .ds-field::placeholder { color: var(--color-ink-3, #6b7069); font-style: italic; } .ds-field:hover:not(:focus) { border-color: var(--color-ink-3, #6b7069); } .ds-field:focus { outline: none; border-color: var(--color-ink, #1a1c1a); box-shadow: inset 0 0 0 1px var(--color-ink, #1a1c1a); }"
+    },
+    {
+      "name": "Position Mark Checkbox",
+      "kind": "custom",
+      "refersTo": "check",
+      "description": "A chart position mark: square, ink, no chrome. Fills solid ink when checked with an inset paper square rather than a tick glyph.",
+      "html": "<label class=\"ds-check-row\"><input type=\"checkbox\" class=\"ds-check\" checked /><span>Select invoice</span></label>",
+      "css": ".ds-check-row { display: inline-flex; align-items: center; gap: 0.5rem; font-family: Archivo, 'Helvetica Neue', Arial, sans-serif; font-size: 13px; color: var(--color-ink, #1a1c1a); } .ds-check { appearance: none; width: 1rem; height: 1rem; border: 1px solid var(--color-ink-2, #555a53); background: var(--color-paper, #fbfaf6); display: inline-grid; place-content: center; flex-shrink: 0; border-radius: 0; transition: background-color 120ms ease-out; } .ds-check::before { content: ''; width: 0.5rem; height: 0.5rem; transform: scale(0); background: var(--color-paper, #fbfaf6); transition: transform 120ms ease-out; } .ds-check:checked { background: var(--color-ink, #1a1c1a); border-color: var(--color-ink, #1a1c1a); } .ds-check:checked::before { transform: scale(1); } .ds-check:hover { border-color: var(--color-ink, #1a1c1a); } .ds-check:focus-visible { outline: 2px solid var(--color-ink, #1a1c1a); outline-offset: 2px; }"
+    },
+    {
+      "name": "Status Chips",
+      "kind": "chip",
+      "refersTo": "chip-caution",
+      "description": "Status always carries a word. Square, currentColor hairline, pale status ground, condensed uppercase.",
+      "html": "<span class=\"ds-chip ds-chip-caution\">Late 12 d</span> <span class=\"ds-chip ds-chip-shoal\">Due soon</span> <span class=\"ds-chip ds-chip-cleared\">Paid in full</span> <span class=\"ds-chip ds-chip-sand\">Partial</span> <span class=\"ds-chip ds-chip-neutral\">18 d left</span>",
+      "css": ".ds-chip { display: inline-flex; align-items: center; gap: 0.35rem; border: 1px solid currentColor; padding: 0.15rem 0.45rem; font-family: Archivo, 'Helvetica Neue', Arial, sans-serif; font-size: 0.6875rem; font-weight: 700; font-stretch: 80%; text-transform: uppercase; letter-spacing: 0.09em; white-space: nowrap; border-radius: 0; } .ds-chip-caution { color: var(--color-caution, #d6006f); background: var(--color-caution-pale, #fbe3ef); } .ds-chip-shoal { color: var(--color-shoal-ink, #17505e); background: var(--color-shoal-pale, #dcedf2); } .ds-chip-cleared { color: var(--color-cleared, #2c6a4c); background: var(--color-cleared-pale, #dcebe2); } .ds-chip-sand { color: var(--color-sand, #96660b); background: var(--color-sand-pale, #f6ead4); } .ds-chip-neutral { color: var(--color-ink-2, #555a53); background: var(--color-water, #f1f3ef); }"
+    },
+    {
+      "name": "Title Block",
+      "kind": "card",
+      "refersTo": "titleblock-cell",
+      "description": "The chart's title block: what this sheet covers and its period soundings, in a ruled cell grid. The system's replacement for a row of floating metric tiles.",
+      "html": "<section class=\"ds-titleblock\"><div class=\"ds-titleblock-head\"><h2 class=\"ds-lbl ds-lbl-strong\">Position — August 2026</h2></div><div class=\"ds-titleblock-cells\"><div class=\"ds-cell\"><div class=\"ds-lbl\">Issued</div><div class=\"ds-sounding-lg\">Rp 412.500.000</div></div><div class=\"ds-cell\"><div class=\"ds-lbl\">Overdue</div><div class=\"ds-sounding-lg\" style=\"color:var(--color-caution,#d6006f)\">Rp 87.300.000</div></div><div class=\"ds-cell\"><div class=\"ds-lbl\">Cleared</div><div class=\"ds-sounding-lg\" style=\"color:var(--color-cleared,#2c6a4c)\">Rp 301.900.000</div></div><div class=\"ds-cell\"><div class=\"ds-lbl\">In hand</div><div class=\"ds-sounding-lg\">Rp 23.300.000</div></div></div></section>",
+      "css": ".ds-titleblock { border: 1px solid var(--color-rule-strong, #1a1c1a); background: var(--color-paper, #fbfaf6); border-radius: 0; font-family: Archivo, 'Helvetica Neue', Arial, sans-serif; } .ds-titleblock-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.5rem 1.25rem; border-bottom: 1px solid var(--color-rule-strong, #1a1c1a); background: var(--color-land-pale, #f0e9d6); padding: 0.6rem 1rem; } .ds-titleblock-cells { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); } @media (min-width: 640px) { .ds-titleblock-cells { grid-template-columns: repeat(4, minmax(0, 1fr)); } .ds-titleblock-cells > .ds-cell:last-child { border-right: 0; } } .ds-cell { position: relative; padding: 0.85rem 1rem 0.95rem; border-top: 1px solid var(--color-rule-soft, #e3e0d4); border-right: 1px solid var(--color-rule-soft, #e3e0d4); } .ds-titleblock-cells > .ds-cell:nth-child(-n + 2) { border-top: 0; } .ds-lbl { font-stretch: 78%; font-weight: 600; text-transform: uppercase; letter-spacing: 0.11em; font-size: 0.6875rem; line-height: 1.2; color: var(--color-ink-2, #555a53); } .ds-lbl-strong { color: var(--color-ink, #1a1c1a); } .ds-sounding-lg { margin-top: 0.5rem; font-variant-numeric: tabular-nums; font-size: clamp(1.15rem, 5vw, 1.75rem); line-height: 1.05; font-weight: 700; letter-spacing: -0.03em; white-space: nowrap; color: var(--color-ink, #1a1c1a); }"
+    },
+    {
+      "name": "Register Row with Depth Band",
+      "kind": "custom",
+      "refersTo": "register-row",
+      "description": "The signature. A 4px band on the row's leading edge encodes time-to-due as charted depth. The band goes on the first cell, never on the row — a positioned <tr> breaks cell layout.",
+      "html": "<table class=\"ds-register\"><thead><tr><th class=\"ds-lbl\">Invoice</th><th class=\"ds-lbl\">Customer</th><th class=\"ds-lbl\" style=\"text-align:right\">Amount</th></tr></thead><tbody><tr><td class=\"ds-depth ds-depth-caution\">INV-0412</td><td>PT Bahari Lintas</td><td class=\"ds-sounding\" style=\"text-align:right\">Rp 87.300.000</td></tr><tr><td class=\"ds-depth ds-depth-shoal\">INV-0413</td><td>Samudra Niaga</td><td class=\"ds-sounding\" style=\"text-align:right\">Rp 42.000.000</td></tr><tr><td class=\"ds-depth ds-depth-cleared\">INV-0414</td><td>Cakra Freight</td><td class=\"ds-sounding\" style=\"text-align:right\">Rp 18.750.000</td></tr><tr><td class=\"ds-depth ds-depth-unsounded\">INV-0415</td><td>Mitra Kargo</td><td class=\"ds-sounding\" style=\"text-align:right\">Rp 9.200.000</td></tr></tbody></table>",
+      "css": ".ds-register { width: 100%; border-collapse: collapse; font-family: Archivo, 'Helvetica Neue', Arial, sans-serif; font-size: 13px; color: var(--color-ink, #1a1c1a); background: var(--color-paper, #fbfaf6); } .ds-register thead th { background: var(--color-land-pale, #f0e9d6); border-block: 1px solid var(--color-rule-strong, #1a1c1a); padding: 0.5rem 0.85rem; text-align: left; white-space: nowrap; font-stretch: 78%; font-weight: 600; text-transform: uppercase; letter-spacing: 0.11em; font-size: 0.6875rem; color: var(--color-ink-2, #555a53); } .ds-register tbody td { border-bottom: 1px solid var(--color-rule-soft, #e3e0d4); padding: 0.7rem 0.85rem; vertical-align: middle; } .ds-register tbody tr:hover { background: var(--color-shoal-pale, #dcedf2); } .ds-sounding { font-variant-numeric: tabular-nums; font-weight: 600; letter-spacing: -0.015em; } .ds-depth { position: relative; } .ds-depth::before { content: ''; position: absolute; inset-block: 0; left: 0; width: 4px; background: transparent; } .ds-depth-safe::before { background: var(--color-rule, #c6c3b6); } .ds-depth-unsounded::before { background: repeating-linear-gradient(to bottom, var(--color-rule, #c6c3b6) 0 3px, transparent 3px 8px); } .ds-depth-shoal::before { background: var(--color-shoal, #8fcddb); } .ds-depth-cleared::before { background: var(--color-cleared, #2c6a4c); } .ds-depth-caution::before { background: repeating-linear-gradient(-45deg, var(--color-caution, #d6006f) 0 2px, var(--color-caution-pale, #fbe3ef) 2px 5px); }"
+    },
+    {
+      "name": "Land Rail Navigation",
+      "kind": "nav",
+      "refersTo": "nav-item-active",
+      "description": "The buff land plate. The active entry is cut out of the land into open water — paper ground, ink rule, and a solid ink marker on the coastline edge. Chart symbols are allowed here because every entry carries a text label.",
+      "html": "<aside class=\"ds-rail\"><div class=\"ds-lbl\" style=\"margin-bottom:0.5rem;padding-left:0.25rem\">Sheets</div><nav><a class=\"ds-nav-item ds-nav-item-active\" href=\"#\"><svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.5\" stroke-linecap=\"square\" stroke-linejoin=\"miter\" aria-hidden=\"true\"><path d=\"M4.5 3.5h15v17h-15z\"/><path d=\"M8 8h8M8 12h8M8 16h4\"/></svg><span>Invoices</span><span class=\"ds-nav-mark\" aria-hidden=\"true\"></span></a><a class=\"ds-nav-item\" href=\"#\"><svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.5\" stroke-linecap=\"square\" stroke-linejoin=\"miter\" aria-hidden=\"true\"><circle cx=\"7.5\" cy=\"8\" r=\"2.75\"/><circle cx=\"16.5\" cy=\"16\" r=\"2.75\"/><path d=\"M9.6 9.9l4.8 4.2\"/></svg><span>Customers</span></a></nav></aside>",
+      "css": ".ds-rail { width: 240px; background: var(--color-land-pale, #f0e9d6); padding: 1rem; font-family: Archivo, 'Helvetica Neue', Arial, sans-serif; box-shadow: inset -1px 0 0 0 var(--color-rule-strong, #1a1c1a), inset -4px 0 0 0 var(--color-land-pale, #f0e9d6), inset -5px 0 0 0 var(--color-rule, #c6c3b6); } .ds-rail .ds-lbl { font-stretch: 78%; font-weight: 600; text-transform: uppercase; letter-spacing: 0.11em; font-size: 0.6875rem; color: var(--color-ink-2, #555a53); } .ds-nav-item { position: relative; display: flex; align-items: center; gap: 0.625rem; border: 1px solid transparent; padding: 0.5rem 0.75rem; font-size: 14px; font-weight: 500; color: var(--color-ink-2, #555a53); text-decoration: none; border-radius: 0; transition: background-color 140ms ease-out, color 140ms ease-out; } .ds-nav-item svg { width: 18px; height: 18px; flex-shrink: 0; } .ds-nav-item:hover { background: var(--color-land, #e6dcc1); color: var(--color-ink, #1a1c1a); } .ds-nav-item-active { border-color: var(--color-ink, #1a1c1a); background: var(--color-paper, #fbfaf6); color: var(--color-ink, #1a1c1a); font-weight: 600; } .ds-nav-mark { position: absolute; top: 50%; left: -5px; width: 6px; height: 6px; transform: translateY(-50%); background: var(--color-ink, #1a1c1a); }"
+    },
+    {
+      "name": "Dialog",
+      "kind": "custom",
+      "refersTo": "sheet",
+      "description": "The one dialog in the app; every modal routes through it. A ruled sheet lifted off the chart with the single elevation token, a land-tinted head bar with an italic water note, and a recessed-water footer rail.",
+      "html": "<div class=\"ds-dialog\"><div class=\"ds-dialog-head\"><div><h2 class=\"ds-dialog-title\">Record payment</h2><p class=\"ds-dialog-note\">INV-0412 · due 14 Aug 2026</p></div><button class=\"ds-dialog-close\" aria-label=\"Close\"><svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.5\" stroke-linecap=\"square\" aria-hidden=\"true\"><path d=\"M6 6l12 12M18 6L6 18\"/></svg></button></div><div class=\"ds-dialog-body\">Amount banked is recorded separately from the invoice total.</div><div class=\"ds-dialog-foot\"><button class=\"ds-dialog-btn\">Cancel</button><button class=\"ds-dialog-btn ds-dialog-btn-primary\">Save</button></div></div>",
+      "css": ".ds-dialog { border: 1px solid var(--color-rule-strong, #1a1c1a); background: var(--color-paper, #fbfaf6); box-shadow: 0 10px 28px -12px rgba(26, 28, 26, 0.34); border-radius: 0; max-width: 28rem; font-family: Archivo, 'Helvetica Neue', Arial, sans-serif; animation: ds-settle 320ms cubic-bezier(0.16, 1, 0.3, 1); } @keyframes ds-settle { from { opacity: 0; transform: translateY(-2px); } to { opacity: 1; transform: none; } } .ds-dialog-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 0.75rem; border-bottom: 1px solid var(--color-rule-strong, #1a1c1a); background: var(--color-land-pale, #f0e9d6); padding: 0.75rem 1rem; } .ds-dialog-title { margin: 0; font-size: 14px; font-weight: 700; letter-spacing: -0.015em; line-height: 1.15; color: var(--color-ink, #1a1c1a); } .ds-dialog-note { margin: 0.125rem 0 0; font-style: italic; font-size: 12px; color: var(--color-ink-2, #555a53); } .ds-dialog-close { border: 1px solid transparent; background: transparent; color: var(--color-ink-2, #555a53); padding: 0.375rem; border-radius: 0; cursor: pointer; } .ds-dialog-close svg { width: 16px; height: 16px; display: block; } .ds-dialog-close:hover { background: var(--color-water, #f1f3ef); color: var(--color-ink, #1a1c1a); } .ds-dialog-body { padding: 1rem; font-size: 13px; color: var(--color-ink, #1a1c1a); } .ds-dialog-foot { display: flex; align-items: center; justify-content: flex-end; gap: 0.5rem; border-top: 1px solid var(--color-rule-soft, #e3e0d4); background: var(--color-water, #f1f3ef); padding: 0.75rem 1rem; } .ds-dialog-btn { border: 1px solid var(--color-rule-strong, #1a1c1a); background: var(--color-paper, #fbfaf6); color: var(--color-ink, #1a1c1a); padding: 0.5rem 0.9rem; font-size: 0.8125rem; font-weight: 600; font-stretch: 88%; letter-spacing: 0.02em; border-radius: 0; cursor: pointer; transition: background-color 140ms ease-out; } .ds-dialog-btn:hover { background: var(--color-land-pale, #f0e9d6); } .ds-dialog-btn-primary { background: var(--color-ink, #1a1c1a); border-color: var(--color-ink, #1a1c1a); color: var(--color-paper, #fbfaf6); } .ds-dialog-btn-primary:hover { background: #000; border-color: #000; }"
+    },
+    {
+      "name": "Depth Key",
+      "kind": "custom",
+      "refersTo": "register-row",
+      "description": "The legend the register carries in its bottom margin. The chart states its own bands because the reader has to learn five of them.",
+      "html": "<div class=\"ds-depth-key\"><span class=\"ds-depth-key-item\"><span class=\"ds-swatch ds-depth ds-depth-unsounded\"></span><span class=\"ds-key-lbl\">No term set</span></span><span class=\"ds-depth-key-item\"><span class=\"ds-swatch ds-depth ds-depth-safe\"></span><span class=\"ds-key-lbl\">In hand</span></span><span class=\"ds-depth-key-item\"><span class=\"ds-swatch ds-depth ds-depth-shoal\"></span><span class=\"ds-key-lbl\">Due soon / short</span></span><span class=\"ds-depth-key-item\"><span class=\"ds-swatch ds-depth ds-depth-caution\"></span><span class=\"ds-key-lbl\">Overdue</span></span><span class=\"ds-depth-key-item\"><span class=\"ds-swatch ds-depth ds-depth-cleared\"></span><span class=\"ds-key-lbl\">Paid in full</span></span></div>",
+      "css": ".ds-depth-key { display: flex; flex-wrap: wrap; align-items: center; gap: 0.35rem 1rem; font-family: Archivo, 'Helvetica Neue', Arial, sans-serif; } .ds-depth-key-item { display: inline-flex; align-items: center; gap: 0.4rem; } .ds-swatch { display: block; width: 4px; height: 14px; flex-shrink: 0; position: relative; } .ds-swatch::before { content: ''; position: absolute; inset-block: 0; left: 0; width: 4px; } .ds-swatch.ds-depth-safe::before { background: var(--color-rule, #c6c3b6); } .ds-swatch.ds-depth-unsounded::before { background: repeating-linear-gradient(to bottom, var(--color-rule, #c6c3b6) 0 3px, transparent 3px 8px); } .ds-swatch.ds-depth-shoal::before { background: var(--color-shoal, #8fcddb); } .ds-swatch.ds-depth-cleared::before { background: var(--color-cleared, #2c6a4c); } .ds-swatch.ds-depth-caution::before { background: repeating-linear-gradient(-45deg, var(--color-caution, #d6006f) 0 2px, var(--color-caution-pale, #fbe3ef) 2px 5px); } .ds-key-lbl { font-stretch: 78%; font-weight: 600; text-transform: uppercase; letter-spacing: 0.11em; font-size: 0.6875rem; line-height: 1.2; color: var(--color-ink-2, #555a53); }"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Sounding Chart",
+    "overview": "An Admiralty chart is a dense field of numbers meant to be read at a glance, under pressure, in bad light. That is exactly this app's problem, so the app is built as a chart rather than as a dashboard. Amounts are soundings. Time-to-due is a charted depth. Overdue wears the chart's own restricted-area magenta. Land — navigation, headers, anything that is structure rather than data — is buff plate; the working field is open paper water. Nothing is rounded, nothing is striped, and nothing floats unless it genuinely floats.\n\nThe build's material is hairline rules on paper. Structure is drawn with a 1px ink border and separated with a 1px soft rule; there are no cards, no tinted panels with soft corners, and no shadow used decoratively. Type carries the chart's own convention literally: condensed tracked caps label features, italic names anything in the water (dates, timings, notes), and tabular figures are the soundings themselves. The single family, Archivo, supplies all three through its width and italic axes.\n\nThe system's discipline is chromatic restraint. Four status hues exist and each means one thing; the interface's own chrome — buttons, focus, checkboxes, active nav, sort marks, pagination — is ink and only ink. The loudest thing in any viewport must be a late invoice, never a control. The direction contract said \"no elevation\"; the build ships exactly one elevation token, used only where something genuinely floats above the sheet (dialogs, the mobile drawer, the signed-out plate). That divergence is recorded, not hidden: flat is the rule, and the one shadow is the named exception.",
+    "keyCharacteristics": [
+      "Zero radius, enforced at the token level across the entire radius scale",
+      "Hairline ink rules as the only structural material; no card shadows",
+      "Four status colours, each with exactly one meaning, never used for chrome",
+      "Chart lettering: condensed tracked caps for features, italic for water, tabular figures for soundings",
+      "Status is never colour alone — a band, a word, and a legend"
+    ],
+    "rules": [
+      {
+        "name": "The One Magenta Rule",
+        "body": "Caution magenta means overdue and nothing else. It is never a primary button, never a focus ring, never a checked box, never an active tab, never a selection tick. Two review rounds were spent reclaiming it from chrome; the audit test is one sentence — if a magenta mark on screen does not correspond to a late invoice, it is a bug.",
+        "section": "colors"
+      },
+      {
+        "name": "The Ink-Chrome Rule",
+        "body": "Every interactive affirmation in the app is ink: primary fill, focus outline, checked state, focused field border, active nav mark, current page, sort arrow. Chrome has no colour of its own.",
+        "section": "colors"
+      },
+      {
+        "name": "The Contrast Floor Rule",
+        "body": "ink-3 (#6b7069) and sand (#96660b) are not aesthetic choices; both were computed to clear 4.5:1 on paper (#fbfaf6) at body size. Do not lighten either. If a lighter tertiary tone is wanted, use less type, not paler type.",
+        "section": "colors"
+      },
+      {
+        "name": "The Never-Colour-Alone Rule",
+        "body": "No status is communicated by hue alone. Every depth band is accompanied by a worded chip, and the register carries a depth-key legend in its bottom margin naming all five bands.",
+        "section": "colors"
+      },
+      {
+        "name": "The Chart Lettering Rule",
+        "body": "Upright type names fixed things — invoice numbers, parties, amounts. Italic names things in the water — dates, timings, notes, anything that drifts. Choosing between them is a semantic decision, not a styling one.",
+        "section": "typography"
+      },
+      {
+        "name": "The Tabular Default Rule",
+        "body": "Tabular figures are set on body and on every field. Never turn them off in a numeric context; a register whose digits do not align has failed at its only job.",
+        "section": "typography"
+      },
+      {
+        "name": "The Prose-Off-The-Ruling Rule",
+        "body": "Prose is never read off a ruled surface. Headings, subtitles, footers and margin legends sit on their own paper ground even when they overlay the plotting field.",
+        "section": "typography"
+      },
+      {
+        "name": "The Coarser-Field Rule",
+        "body": "The app's plotting field is always coarser than the ruling of anything laid on it (88px field against 44px sheet ruling). If a new ruled surface approaches 88px, change the surface, not the field.",
+        "section": "layout"
+      },
+      {
+        "name": "The Sticky-Never-Doubles Rule",
+        "body": "The sticky bar names the sheet only after the H1 has scrolled out of view. The same words never appear twice in one viewport.",
+        "section": "layout"
+      },
+      {
+        "name": "The Flat-Sheet Rule",
+        "body": "Anything that lives in the document plane — sheets, wells, title blocks, tables, chips, buttons, fields — has no shadow. Depth is drawn, not lit. Lift is available only to portalled or overlaying surfaces.",
+        "section": "elevation"
+      },
+      {
+        "name": "The Drawn-Depth Rule",
+        "body": "The one place the system genuinely expresses depth is the depth band, and that depth is semantic (time-to-due), not spatial.",
+        "section": "elevation"
+      },
+      {
+        "name": "The First-Cell Rule",
+        "body": "The depth band goes on the row's first <td>, never on the <tr>. A positioned table row breaks cell layout in browsers; this shipped as a real bug on two pages before it was caught. Every consumer — register, customers, users, trash — applies depth depth-* to a cell.",
+        "section": "components"
+      }
+    ],
+    "dos": [
+      "Do keep every interactive affirmation in ink — primary fill, focus outline, checked box, focused field border, active nav mark, current page, sort arrow.",
+      "Do pair every status colour with a word. Chips carry the status text; the register carries the depth-key legend.",
+      "Do put the depth band on the first <td>, never on the <tr>.",
+      "Do build containers from 1px hairlines: ink for a sheet's boundary, rule for internal separators, rule-soft for divisions inside a sheet.",
+      "Do choose upright versus italic semantically — upright for fixed things, italic for anything in the water.",
+      "Do keep tabular figures on in every numeric context.",
+      "Do set prose on its own paper ground whenever it overlays a ruled field.",
+      "Do keep the plotting field coarser than any ruling laid on it (88px field against 44px sheet ruling).",
+      "Do reserve Lift for surfaces that genuinely float — dialogs, the drawer, the signed-out plate.",
+      "Do route every modal through the single dialog primitive.",
+      "Do give navigation entries a chart symbol only alongside a text label."
+    ],
+    "donts": [
+      "Don't use caution magenta for anything but overdue. Not a primary button, not a focus ring, not a checked box, not an active tab.",
+      "Don't lighten ink-3 or sand; both were computed against the 4.5:1 floor on paper.",
+      "Don't reintroduce corner radius. The whole scale is zeroed at the token level and a rounded-* utility will silently do nothing — if you find yourself reaching for one, the shape is wrong.",
+      "Don't add a shadow to anything in the document plane. Flat is the material, not a preference.",
+      "Don't add a second authored motion moment. settle is a convention; depth-tide is the one moment and it belongs to the payment event.",
+      "Don't use a chart symbol on an icon-only control. Recognition wins over grammar wherever there is no text label — that is why trash is a bin and not a wreck.",
+      "Don't set prose on the graticule or on any ruled surface.",
+      "Don't reintroduce floating metric tiles. The title block's ruled cell grid is the system's answer for summary figures.",
+      "Don't apply any of this system to src/components/templates/. The printed document is an excluded zone."
+    ]
+  }
+}

@@ -35,7 +35,7 @@ export async function PUT(req: NextRequest, { params }: Params) {
   } catch {
     // UNIQUE(name) violation — renamed to a name that already exists.
     return NextResponse.json(
-      { error: "Customer dengan nama itu sudah ada" },
+      { error: "A customer with that name already exists" },
       { status: 409 }
     );
   }

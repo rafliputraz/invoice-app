@@ -62,7 +62,7 @@ export async function POST(req: NextRequest) {
   delete (data as Partial<{ manualInvoiceNo: boolean }>).manualInvoiceNo;
   if (manual && !data.invoiceNo.trim()) {
     return NextResponse.json(
-      { error: "Nomor invoice manual tidak boleh kosong" },
+      { error: "Invoice number cannot be empty" },
       { status: 400 }
     );
   }
@@ -122,7 +122,7 @@ export async function POST(req: NextRequest) {
   } catch (err) {
     if (err instanceof Error && err.message === "DUPLICATE_INVOICE_NO") {
       return NextResponse.json(
-        { error: `Nomor invoice "${data.invoiceNo.trim()}" sudah dipakai` },
+        { error: `Invoice number "${data.invoiceNo.trim()}" is already in use` },
         { status: 409 }
       );
     }

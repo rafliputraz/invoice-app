@@ -23,7 +23,7 @@ export default function BandTemplate({ data }: { data: InvoiceData }) {
       {/* ===== Brand band ===== */}
       <div className="flex items-center justify-between bg-red-700 px-[8mm] py-4 text-white">
         <div className="flex items-center gap-3">
-          <div className="rounded bg-white p-1.5">
+          <div className="rounded-none bg-white p-1.5">
             <img src="/logo-sfl.png" alt="SFL logo" className="h-11 w-auto" />
           </div>
           <div>

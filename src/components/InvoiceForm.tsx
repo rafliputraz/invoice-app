@@ -12,98 +12,78 @@ import { itemDisplayAmount, VAT_VARIANTS } from "@/lib/calc";
 import { DEFAULT_SIGNER } from "@/lib/defaults";
 import { fmtDate, fmtMoney } from "@/lib/format";
 import { dueDateOf } from "@/lib/invoice-number";
+import {
+  IconAnchor,
+  IconChevronDown,
+  IconClose,
+  IconGrip,
+  IconPlus,
+} from "./Icons";
 
 type Setter = (updater: (prev: InvoiceData) => InvoiceData) => void;
 
 /** Invoice currency mode selectable in the Charges section. */
 type CurrencyMode = "usd_idr" | "idr" | "usd";
 
-const SECTION_TONES = {
-  blue: "bg-blue-100 text-blue-600",
-  emerald: "bg-emerald-100 text-emerald-600",
-  indigo: "bg-indigo-100 text-indigo-600",
-  amber: "bg-amber-100 text-amber-600",
-  cyan: "bg-cyan-100 text-cyan-600",
-  slate: "bg-slate-200 text-slate-600",
-} as const;
-
+/**
+ * A collapsible block of the form. Ruled, flat, and titled in chart caps —
+ * no icon tile, no elevation. The form is a stack of sheets, not a stack of
+ * cards competing for attention with the data.
+ */
 function Section({
   title,
-  icon,
-  tone = "blue",
   children,
 }: {
   title: string;
-  icon: string;
-  tone?: keyof typeof SECTION_TONES;
   children: React.ReactNode;
 }) {
   const [open, setOpen] = useState(true);
   return (
-    <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+    <section className="panel">
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
-        className="group flex w-full items-center justify-between border-b border-slate-100 bg-slate-50 px-4 py-3"
+        aria-expanded={open}
+        className={`panel-head flex w-full items-center justify-between gap-2 px-3.5 py-2.5 text-left transition-colors hover:bg-soft ${
+          open ? "" : "rounded-b-md border-b-transparent"
+        }`}
       >
-        <span className="flex items-center gap-2">
-          <span
-            className={`flex h-6 w-6 items-center justify-center rounded ${SECTION_TONES[tone]}`}
-          >
-            <svg
-              className="h-3.5 w-3.5"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth="2"
-                d={icon}
-              />
-            </svg>
-          </span>
-          <span className="text-sm font-bold text-slate-800">{title}</span>
-        </span>
-        <svg
-          className={`h-4 w-4 text-slate-400 transition-transform ${open ? "" : "-rotate-90"}`}
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth="2"
-            d="M19 9l-7 7-7-7"
-          />
-        </svg>
+        <span className="lbl lbl-strong">{title}</span>
+        <IconChevronDown
+          className={`h-4 w-4 shrink-0 text-ink-2 transition-transform ${
+            open ? "" : "-rotate-90"
+          }`}
+        />
       </button>
-      {open && <div className="space-y-4 p-4">{children}</div>}
-    </div>
+      {open && <div className="space-y-3.5 px-3.5 py-3.5">{children}</div>}
+    </section>
   );
 }
 
 function Field({
   label,
+  hint,
   children,
 }: {
   label: string;
+  /** Small italic note shown to the right of the label. */
+  hint?: string;
   children: React.ReactNode;
 }) {
   return (
     <label className="block">
-      <span className="mb-1.5 block text-xs font-semibold text-slate-700">
+      <span className="lbl mb-1.5 flex items-baseline justify-between gap-2">
         {label}
+        {hint && (
+          <span className="font-normal normal-case italic tracking-normal">
+            {hint}
+          </span>
+        )}
       </span>
       {children}
     </label>
   );
 }
-
-const inputCls =
-  "w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 transition-colors focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none";
 
 export default function InvoiceForm({
   data,
@@ -240,113 +220,88 @@ export default function InvoiceForm({
     .sort((a, b) => Number(!!a.item.pinned) - Number(!!b.item.pinned));
 
   return (
-    <div className="space-y-4">
-      <Section
-        title="Invoice Details"
-        tone="blue"
-        icon="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-      >
+    <div className="space-y-3.5">
+      <Section title="Invoice details">
         {addendum && (
-          <div className="flex items-center gap-2 rounded-lg border border-indigo-200 bg-indigo-50 px-3 py-2 text-[11px] text-indigo-700">
-            <svg
-              className="h-4 w-4 shrink-0"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth="2"
-                d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-              />
-            </svg>
-            Tambahan untuk B/L existing — nomor & shipment/customer mengikuti
-            invoice induk. Isi charge yang berbeda di bawah.
-          </div>
+          <p className="rounded-sm border border-open/25 bg-open-soft px-3 py-2 text-[11px] leading-relaxed text-open">
+            Addendum on an existing bill of lading. The number, shipment and
+            customer follow the parent invoice — enter only the different
+            charges below.
+          </p>
         )}
+
         <div className="grid grid-cols-2 gap-3">
           <Field
-            label={
+            label="Invoice no."
+            hint={
               addendum
-                ? "Invoice No (tambahan B/L)"
+                ? "from parent"
                 : manualNo
-                  ? "Invoice No (manual)"
+                  ? "manual"
                   : isNew
-                    ? "Invoice No (auto)"
-                    : "Invoice No"
+                    ? "auto"
+                    : undefined
             }
           >
             {manualNo ? (
               <input
-                className={`${inputCls} font-mono ${
+                className="field"
+                style={
                   numberError
-                    ? "border-rose-400 focus:border-rose-500 focus:ring-rose-500"
-                    : ""
-                }`}
+                    ? { borderColor: "var(--color-late)" }
+                    : undefined
+                }
                 value={data.invoiceNo}
                 onChange={(e) => set({ invoiceNo: e.target.value })}
-                placeholder="mis. 015/III/SFL/25"
+                placeholder="015/III/SFL/25"
                 aria-invalid={!!numberError}
               />
             ) : (
               <input
-                className={`w-full cursor-not-allowed rounded-lg border bg-slate-100 px-3 py-2 font-mono text-sm font-medium text-slate-500 ${
-                  addendum && numberError
-                    ? "border-rose-400"
-                    : "border-slate-200"
-                }`}
+                className="field cursor-not-allowed bg-soft text-ink-2"
                 value={data.invoiceNo}
                 readOnly
                 tabIndex={-1}
-                placeholder={addendum ? "Pilih invoice induk…" : undefined}
+                placeholder={addendum ? "Choose a parent invoice…" : undefined}
               />
             )}
             {(manualNo || addendum) && numberError && (
-              <span className="mt-1 flex items-center gap-1 text-[11px] font-medium text-rose-600">
-                <svg
-                  className="h-3.5 w-3.5 shrink-0"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth="2"
-                    d="M12 9v2m0 4h.01M12 5.5L3.5 20h17L12 5.5z"
-                  />
-                </svg>
+              <span className="mt-1 block text-[11px] font-medium text-overdue">
                 {numberError}
               </span>
             )}
           </Field>
+
           <Field label="Date">
             <input
               type="date"
-              className={inputCls}
+              className="field"
               value={data.invoiceDate}
               onChange={(e) => set({ invoiceDate: e.target.value })}
             />
           </Field>
         </div>
+
         {setManualNo && !addendum && (
-          <label className="flex items-center gap-2 text-xs text-slate-500">
+          <label className="flex items-start gap-2 text-xs text-ink-2">
             <input
               type="checkbox"
+              className="check mt-px h-3.5 w-3.5"
               checked={manualNo}
               onChange={(e) => setManualNo(e.target.checked)}
-              className="h-3.5 w-3.5 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
             />
-            {isNew
-              ? "Isi nomor invoice manual (untuk input data lama / backlog)"
-              : "Ubah nomor invoice manual (koreksi jika Invoice No. salah)"}
+            <span>
+              {isNew
+                ? "Type the number myself (for backlog entries)"
+                : "Correct the invoice number by hand"}
+            </span>
           </label>
         )}
+
         <div className="grid grid-cols-2 gap-3">
           <Field label="Label">
             <select
-              className={inputCls}
+              className="field"
               value={data.copyLabel}
               onChange={(e) => set({ copyLabel: e.target.value })}
             >
@@ -356,75 +311,65 @@ export default function InvoiceForm({
           </Field>
           <Field label="Payment terms">
             <input
-              className={inputCls}
+              className="field"
               value={data.paymentTerms}
               onChange={(e) => set({ paymentTerms: e.target.value })}
             />
           </Field>
         </div>
-        <Field label="Payment Due">
-          <div className="flex rounded-lg shadow-sm">
+
+        <Field label="Payment due">
+          <div className="flex">
             <input
               type="number"
               step="1"
               min="1"
-              className="z-10 flex-1 rounded-l-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 transition-colors focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none"
+              className="field field-num flex-1"
               value={data.dueDays || ""}
               onChange={(e) =>
                 set({ dueDays: parseInt(e.target.value) || undefined })
               }
-              placeholder="e.g. 30"
+              placeholder="30"
             />
-            <span className="inline-flex items-center rounded-r-lg border border-l-0 border-slate-300 bg-slate-50 px-3 text-sm text-slate-500">
-              Days
+            <span className="lbl flex items-center border border-l-0 border-line bg-soft px-3">
+              days
             </span>
           </div>
           {(() => {
             const due = dueDateOf(data.invoiceDate, data.dueDays);
             return (
-              <span className="mt-1.5 block text-[11px] text-slate-500">
+              <span className="note mt-1.5 block text-[11px]">
                 {due
-                  ? `Jatuh tempo: ${fmtDate(due)}`
-                  : "Kosongkan jika customer bayar langsung."}
+                  ? `Falls due ${fmtDate(due)}`
+                  : "Leave empty if they pay on the spot — it will never count as late."}
               </span>
             );
           })()}
         </Field>
-        <label className="block">
-          <span className="mb-1.5 flex items-center justify-between">
-            <span className="text-xs font-semibold text-slate-700">
-              Invoiced By
-            </span>
-            <span className="rounded bg-slate-100 px-1.5 py-0.5 text-[10px] font-medium text-slate-400">
-              Optional
-            </span>
-          </span>
+
+        <Field label="Invoiced by" hint="optional">
           <input
-            className={inputCls}
+            className="field"
             value={data.invoicedBy ?? ""}
             onChange={(e) => set({ invoicedBy: e.target.value })}
-            placeholder="e.g. Sapta Fajri"
+            placeholder="Sapta Fajri"
           />
-          <span className="mt-1.5 block text-[11px] text-slate-500">
-            Disembunyikan dari dokumen jika kosong.
+          <span className="note mt-1.5 block text-[11px]">
+            Hidden from the printed document when empty.
           </span>
-        </label>
+        </Field>
       </Section>
 
-      <Section
-        title="Customer Details"
-        tone="emerald"
-        icon="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"
-      >
+      <Section title="Customer">
         {customers.length > 0 && (
-          <Field label="Pilih customer tersimpan (isi otomatis)">
+          <Field label="Fill from a saved customer">
             <div className="flex gap-2">
               <select
-                className={inputCls}
+                className="field"
                 value=""
                 onChange={(e) => pickCustomer(e.target.value)}
               >
-                <option value="">— pilih customer —</option>
+                <option value="">— choose a customer —</option>
                 {customers.map((c) => (
                   <option key={c.id} value={c.id}>
                     {c.name}
@@ -434,27 +379,29 @@ export default function InvoiceForm({
               <button
                 type="button"
                 onClick={clearCustomer}
-                title="Kosongkan isian customer"
-                className="shrink-0 rounded-lg border border-slate-300 px-2 py-1.5 text-xs text-slate-500 hover:bg-slate-50 hover:text-rose-500"
+                title="Clear the customer fields"
+                className="btn btn-sm shrink-0 hover:text-overdue"
               >
-                ✕ Clear
+                Clear
               </button>
             </div>
           </Field>
         )}
+
         <Field label="Customer name">
           <input
-            className={inputCls}
+            className="field"
             value={data.invoiceTo.name}
             onChange={(e) =>
               set({ invoiceTo: { ...data.invoiceTo, name: e.target.value } })
             }
-            placeholder="PT. SALAM FORTUNA LOGISTIK"
+            placeholder="PT. Example Indonesia"
           />
         </Field>
-        <Field label="Address (one line per row)">
+
+        <Field label="Address" hint="one line each">
           <textarea
-            className={inputCls}
+            className="field resize-y"
             rows={3}
             value={data.invoiceTo.addressLines.join("\n")}
             onChange={(e) =>
@@ -467,27 +414,24 @@ export default function InvoiceForm({
             }
           />
         </Field>
-        <Field label="Tax ID">
+
+        <Field label="Tax ID (NPWP)">
           <input
-            className={inputCls}
+            className="field"
             value={data.invoiceTo.taxId}
             onChange={(e) =>
               set({ invoiceTo: { ...data.invoiceTo, taxId: e.target.value } })
             }
-            placeholder="000000 000 0000 000"
+            placeholder="00.000.000.0-000.000"
           />
         </Field>
       </Section>
 
-      <Section
-        title="Shipment Details"
-        tone="indigo"
-        icon="M13 10V3L4 14h7v7l9-11h-7z"
-      >
+      <Section title="Shipment">
         <div className="grid grid-cols-2 gap-3">
-          <Field label="Bill of Lading">
+          <Field label="Bill of lading">
             <input
-              className={inputCls}
+              className="field"
               value={data.shipment.billOfLading}
               onChange={(e) =>
                 set({
@@ -497,9 +441,9 @@ export default function InvoiceForm({
               placeholder="MEDURQ995991"
             />
           </Field>
-          <Field label="Vessel / Voyage">
+          <Field label="Vessel / voyage">
             <input
-              className={inputCls}
+              className="field"
               value={data.shipment.vesselVoyage}
               onChange={(e) =>
                 set({
@@ -509,9 +453,9 @@ export default function InvoiceForm({
               placeholder="MSC MANU IV"
             />
           </Field>
-          <Field label="Loading Port">
+          <Field label="Loading port">
             <input
-              className={inputCls}
+              className="field"
               value={data.shipment.loadingPort}
               onChange={(e) =>
                 set({
@@ -521,9 +465,9 @@ export default function InvoiceForm({
               placeholder="Panjang, ID"
             />
           </Field>
-          <Field label="Discharge Port">
+          <Field label="Discharge port">
             <input
-              className={inputCls}
+              className="field"
               value={data.shipment.dischargePort}
               onChange={(e) =>
                 set({
@@ -535,7 +479,7 @@ export default function InvoiceForm({
           </Field>
           <Field label="Shipment contract">
             <input
-              className={inputCls}
+              className="field"
               value={data.shipment.shipmentContract}
               onChange={(e) =>
                 set({
@@ -551,16 +495,16 @@ export default function InvoiceForm({
           <Field label="ETD">
             <input
               type="date"
-              className={inputCls}
+              className="field"
               value={data.shipment.etd}
               onChange={(e) =>
                 set({ shipment: { ...data.shipment, etd: e.target.value } })
               }
             />
           </Field>
-          <Field label="Qty">
+          <Field label="Quantity">
             <input
-              className={inputCls}
+              className="field"
               value={data.shipment.qty}
               onChange={(e) =>
                 set({ shipment: { ...data.shipment, qty: e.target.value } })
@@ -571,50 +515,47 @@ export default function InvoiceForm({
         </div>
       </Section>
 
-      <Section
-        title="Charges"
-        tone="amber"
-        icon="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-      >
-        <Field label="Mata uang invoice">
-          <div className="grid grid-cols-3 gap-2">
+      <Section title="Charges">
+        <Field label="Invoice currency">
+          <div className="flex">
             {(
               [
                 ["usd_idr", "USD + IDR"],
-                ["idr", "IDR Only"],
-                ["usd", "USD Only"],
+                ["idr", "IDR only"],
+                ["usd", "USD only"],
               ] as const
             ).map(([val, label]) => (
               <button
-                key={label}
+                key={val}
                 type="button"
                 onClick={() => setCurrencyMode(val)}
-                className={`rounded-lg border px-3 py-2 text-xs font-semibold transition-colors ${
+                aria-pressed={currencyMode === val}
+                className={`lbl flex-1 border border-r-0 border-line px-2 py-2 transition-colors last:border-r ${
                   currencyMode === val
-                    ? "border-blue-500 bg-blue-50 text-blue-700"
-                    : "border-slate-300 bg-white text-slate-600 hover:bg-slate-50"
+                    ? "lbl-strong border-ink-2 bg-soft"
+                    : "hover:bg-soft"
                 }`}
               >
                 {label}
               </button>
             ))}
           </div>
-          <span className="mt-1.5 block text-[11px] text-slate-500">
+          <span className="note mt-1.5 block text-[11px]">
             {currencyMode === "usd_idr"
-              ? "Item bisa USD/IDR, kurs & bank USD tampil di invoice."
+              ? "Lines may be USD or IDR; the exchange rate and USD bank appear on the document."
               : currencyMode === "idr"
-                ? "Semua item IDR — baris kurs & bank USD disembunyikan."
-                : "Semua item USD, tanpa rupiah & tanpa pajak (PPN/PPh)."}
+                ? "Every line in rupiah; the rate line and USD bank are hidden."
+                : "Every line in USD, with no rupiah conversion and no tax (VAT and PPh off)."}
           </span>
         </Field>
 
         {usesUsd && !usdOnly && (
-          <Field label="Exchange rate (IDR per USD 1)">
+          <Field label="Exchange rate" hint="IDR per USD 1">
             <input
               type="number"
               step="any"
               min="0"
-              className={inputCls}
+              className="field field-num"
               value={data.exchangeRate || ""}
               onChange={(e) =>
                 set({ exchangeRate: parseFloat(e.target.value) || 0 })
@@ -624,19 +565,19 @@ export default function InvoiceForm({
           </Field>
         )}
 
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
+        <div className="-mx-1 overflow-x-auto">
+          <table className="w-full px-1 text-sm">
             <thead>
-              <tr className="text-left text-xs text-slate-500">
-                <th className="pb-1 pr-1"></th>
-                <th className="pb-1 pr-2 font-medium">Description</th>
-                <th className="pb-1 pr-2 font-medium">Curr</th>
-                <th className="pb-1 pr-2 font-medium">Price</th>
-                <th className="pb-1 pr-2 font-medium">Qty</th>
-                <th className="pb-1 pr-2 text-right font-medium">
-                  {usdOnly ? "USD Amount" : "IDR Amount"}
+              <tr>
+                <th className="w-5 pb-1.5"></th>
+                <th className="lbl pb-1.5 pr-2 text-left">Description</th>
+                <th className="lbl pb-1.5 pr-2 text-left">Curr</th>
+                <th className="lbl pb-1.5 pr-2 text-left">Price</th>
+                <th className="lbl pb-1.5 pr-2 text-left">Qty</th>
+                <th className="lbl pb-1.5 pr-2 text-right">
+                  {usdOnly ? "USD" : "IDR"}
                 </th>
-                <th className="pb-1"></th>
+                <th className="w-7 pb-1.5"></th>
               </tr>
             </thead>
             <tbody>
@@ -658,41 +599,43 @@ export default function InvoiceForm({
                   }
                   className={dragIndex === i ? "opacity-50" : ""}
                 >
-                  <td className="py-1 pr-1 align-middle">
+                  <td className="py-1 align-middle">
                     {item.pinned ? (
                       <span
-                        className="cursor-default text-xs text-slate-400"
+                        className="block text-ink-3"
                         title="Always stays at the bottom"
                       >
-                        📌
+                        <IconAnchor className="h-4 w-4" />
                       </span>
                     ) : (
                       <span
                         draggable
                         onDragStart={() => setDragIndex(i)}
                         onDragEnd={() => setDragIndex(null)}
-                        className="cursor-grab select-none text-slate-400 hover:text-slate-600 active:cursor-grabbing"
+                        className="block cursor-grab text-ink-3 transition-colors select-none hover:text-ink active:cursor-grabbing"
                         title="Drag to reorder"
                       >
-                        ⠿
+                        <IconGrip className="h-4 w-4" />
                       </span>
                     )}
                   </td>
                   <td className="py-1 pr-2">
                     <input
-                      className={inputCls}
+                      className="field"
                       value={item.description}
                       onChange={(e) =>
                         setItem(i, { description: e.target.value })
                       }
                       placeholder="Ocean Freight"
+                      aria-label="Description"
                     />
                   </td>
                   <td className="py-1 pr-2">
                     {usesUsd && !usdOnly ? (
                       <select
-                        className="w-[4.5rem] rounded-lg border border-slate-300 px-1 py-1.5 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                        className="field w-[4.75rem] px-1.5"
                         value={item.currency}
+                        aria-label="Currency"
                         onChange={(e) =>
                           setItem(i, {
                             currency: e.target.value as LineItem["currency"],
@@ -703,7 +646,7 @@ export default function InvoiceForm({
                         <option value="IDR">IDR</option>
                       </select>
                     ) : (
-                      <span className="inline-block w-[4.5rem] px-1 py-1.5 text-sm text-slate-500">
+                      <span className="lbl inline-block w-[4.75rem] px-1.5">
                         {usdOnly ? "USD" : "IDR"}
                       </span>
                     )}
@@ -713,8 +656,9 @@ export default function InvoiceForm({
                       type="number"
                       step="any"
                       min="0"
-                      className="w-20 rounded-lg border border-slate-300 px-1.5 py-1.5 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                      className="field field-num w-24 px-1.5"
                       value={item.unitPrice || ""}
+                      aria-label="Unit price"
                       onChange={(e) =>
                         setItem(i, {
                           unitPrice: parseFloat(e.target.value) || 0,
@@ -727,24 +671,29 @@ export default function InvoiceForm({
                       type="number"
                       step="1"
                       min="1"
-                      className="w-14 rounded-lg border border-slate-300 px-2 py-1.5 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                      className="field field-num w-14 px-1.5"
                       value={item.qty || ""}
+                      aria-label="Quantity"
                       onChange={(e) =>
                         setItem(i, { qty: parseInt(e.target.value) || 0 })
                       }
                     />
                   </td>
-                  <td className="py-1 pr-2 text-right font-mono text-xs text-slate-600">
-                    {fmtMoney(itemDisplayAmount(item, data), usdOnly ? "USD" : "IDR")}
+                  <td className="fig py-1 pr-2 text-right text-xs">
+                    {fmtMoney(
+                      itemDisplayAmount(item, data),
+                      usdOnly ? "USD" : "IDR"
+                    )}
                   </td>
                   <td className="py-1">
                     <button
                       type="button"
                       onClick={() => removeItem(i)}
-                      className="rounded px-2 py-1 text-red-500 hover:bg-red-50"
-                      title="Remove row"
+                      className="btn btn-quiet p-1 hover:text-overdue"
+                      title="Remove this line"
+                      aria-label="Remove this line"
                     >
-                      ✕
+                      <IconClose className="h-3.5 w-3.5" />
                     </button>
                   </td>
                 </tr>
@@ -752,89 +701,89 @@ export default function InvoiceForm({
             </tbody>
           </table>
         </div>
+
         <button
           type="button"
           onClick={addItem}
-          className="rounded border border-dashed border-slate-300 px-3 py-1.5 text-sm text-slate-600 hover:border-blue-400 hover:text-blue-600"
+          className="btn btn-sm w-full border-dashed"
         >
-          + Add row
+          <IconPlus className="h-3.5 w-3.5" />
+          Add a line
         </button>
 
         {!usdOnly && (
-        <>
-        <div className="space-y-2 pt-1">
-          <label className="flex items-center gap-2 text-sm">
-            <input
-              type="checkbox"
-              checked={data.vatEnabled}
-              onChange={(e) => set({ vatEnabled: e.target.checked })}
-            />
-            <span>Kenakan VAT / PPN</span>
-          </label>
-          {data.vatEnabled && (
-            <div className="ml-6 space-y-1.5">
-              {(Object.keys(VAT_VARIANTS) as VatVariant[]).map((v) => {
-                const info = VAT_VARIANTS[v];
-                const pct = (info.rate * 100).toLocaleString("id-ID", {
-                  maximumFractionDigits: 2,
-                });
-                return (
-                  <label
-                    key={v}
-                    className="flex items-center gap-2 text-xs text-slate-700"
-                  >
-                    <input
-                      type="radio"
-                      name="vatVariant"
-                      checked={(data.vatVariant ?? "reduced") === v}
-                      onChange={() => set({ vatVariant: v, vatLabel: info.label })}
-                    />
-                    <span>
-                      VAT Charges {info.label}{" "}
-                      <span className="text-slate-400">({pct}%)</span>
-                    </span>
-                  </label>
-                );
-              })}
-            </div>
-          )}
-        </div>
-
-        </>
+          <div className="space-y-2 border-t border-line pt-3">
+            <label className="flex items-center gap-2 text-[13px]">
+              <input
+                type="checkbox"
+                className="check"
+                checked={data.vatEnabled}
+                onChange={(e) => set({ vatEnabled: e.target.checked })}
+              />
+              <span className="font-medium text-ink">Charge VAT (PPN)</span>
+            </label>
+            {data.vatEnabled && (
+              <div className="ml-6 space-y-1.5">
+                {(Object.keys(VAT_VARIANTS) as VatVariant[]).map((v) => {
+                  const info = VAT_VARIANTS[v];
+                  const pct = (info.rate * 100).toLocaleString("en-GB", {
+                    maximumFractionDigits: 2,
+                  });
+                  return (
+                    <label
+                      key={v}
+                      className="flex items-center gap-2 text-xs text-ink-2"
+                    >
+                      <input
+                        type="radio"
+                        name="vatVariant"
+                        checked={(data.vatVariant ?? "reduced") === v}
+                        onChange={() =>
+                          set({ vatVariant: v, vatLabel: info.label })
+                        }
+                      />
+                      <span>
+                        {info.label}{" "}
+                        <span className="fig text-ink">({pct}%)</span>
+                      </span>
+                    </label>
+                  );
+                })}
+              </div>
+            )}
+          </div>
         )}
       </Section>
 
-      <Section
-        title="Bank Accounts"
-        tone="cyan"
-        icon="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"
-      >
-        <div className="grid grid-cols-2 gap-3">
+      <Section title="Bank accounts">
+        <div className="grid grid-cols-2 gap-4">
           {(
             [
-              ["bankIdr", "IDR Currency"],
-              ["bankUsd", "USD Currency"],
+              ["bankIdr", "Rupiah account"],
+              ["bankUsd", "USD account"],
             ] as const
           ).map(([key, label]) => (
-            <div key={key} className="space-y-2">
-              <div className="text-xs font-semibold text-slate-600">{label}</div>
+            <div key={key} className="space-y-2.5">
+              <div className="lbl lbl-strong border-b border-line pb-1.5">
+                {label}
+              </div>
               <Field label="Bank">
                 <input
-                  className={inputCls}
+                  className="field"
                   value={data[key].bank}
                   onChange={(e) => setBank(key, { bank: e.target.value })}
                 />
               </Field>
-              <Field label="Acc no">
+              <Field label="Account no.">
                 <input
-                  className={inputCls}
+                  className="field"
                   value={data[key].accNo}
                   onChange={(e) => setBank(key, { accNo: e.target.value })}
                 />
               </Field>
-              <Field label="Acc name">
+              <Field label="Account name">
                 <input
-                  className={inputCls}
+                  className="field"
                   value={data[key].accName}
                   onChange={(e) => setBank(key, { accName: e.target.value })}
                 />
@@ -844,23 +793,19 @@ export default function InvoiceForm({
         </div>
       </Section>
 
-      <Section
-        title="Company (Header)"
-        tone="slate"
-        icon="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"
-      >
+      <Section title="Company header">
         <Field label="Company name">
           <input
-            className={inputCls}
+            className="field"
             value={data.company.name}
             onChange={(e) =>
               set({ company: { ...data.company, name: e.target.value } })
             }
           />
         </Field>
-        <Field label="Address (one line per row)">
+        <Field label="Address" hint="one line each">
           <textarea
-            className={inputCls}
+            className="field resize-y"
             rows={3}
             value={data.company.addressLines.join("\n")}
             onChange={(e) =>
@@ -875,16 +820,16 @@ export default function InvoiceForm({
         </Field>
         <Field label="Mobile">
           <input
-            className={inputCls}
+            className="field"
             value={data.company.mobile}
             onChange={(e) =>
               set({ company: { ...data.company, mobile: e.target.value } })
             }
           />
         </Field>
-        <Field label="Signature name (bottom right of invoice)">
+        <Field label="Signature name" hint="bottom right of the document">
           <input
-            className={inputCls}
+            className="field"
             value={data.signatureName ?? DEFAULT_SIGNER}
             onChange={(e) => set({ signatureName: e.target.value })}
           />

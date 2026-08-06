@@ -25,6 +25,29 @@ export function fmtMoney(n: number, currency: "USD" | "IDR"): string {
   return currency === "USD" ? fmtUsd(n) : fmtIdr(n);
 }
 
+/**
+ * Strip the replacement character and control junk that reached the database
+ * from a bad paste or a mis-decoded import, so a name never renders as a
+ * black diamond in the middle of the register.
+ */
+export function cleanName(s: string): string {
+  return (s || "")
+    .replace(/[\uFFFD\u0000-\u001F\u007F]/g, " ")
+    .replace(/\s{2,}/g, " ")
+    .trim();
+}
+
+/** Two-letter monogram built from Latin characters only, never a stray glyph. */
+export function monogramOf(name: string, stripCompanyPrefix = false): string {
+  let s = cleanName(name);
+  if (stripCompanyPrefix) s = s.replace(/^(PT|CV|UD|PD)\.?\s+/i, "");
+  const letters = s
+    .split(/\s+/)
+    .map((w) => w.match(/[A-Za-z0-9]/)?.[0])
+    .filter(Boolean) as string[];
+  return letters.join("").slice(0, 2).toUpperCase() || "?";
+}
+
 /** "2026-07-17" -> "Jul 17, 2026" */
 export function fmtDate(iso: string): string {
   if (!iso) return "";

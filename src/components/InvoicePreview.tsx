@@ -15,7 +15,7 @@ const TEMPLATES: Record<TemplateId, React.ComponentType<{ data: InvoiceData }>> 
   };
 
 export const TEMPLATE_LABELS: Record<TemplateId, string> = {
-  classic: "Classic (SFL paper)",
+  classic: "Classic (SFL sheet)",
   modern: "Modern Minimal",
   band: "Bold Header Band",
   ledger: "Carrier Ledger",

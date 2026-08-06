@@ -25,7 +25,7 @@ export async function PATCH(
   if (password !== undefined) {
     if (password.length < 6) {
       return NextResponse.json(
-        { error: "Password minimal 6 karakter" },
+        { error: "Password must be at least 6 characters" },
         { status: 400 }
       );
     }
@@ -48,7 +48,7 @@ export async function PATCH(
   // Block self role-change so an admin can't accidentally lock themselves out.
   if (Number(id) === me.id) {
     return NextResponse.json(
-      { error: "Anda tidak bisa mengubah role sendiri" },
+      { error: "You cannot change your own role" },
       { status: 400 }
     );
   }

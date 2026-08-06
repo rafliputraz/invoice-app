@@ -17,7 +17,7 @@ export async function POST(req: NextRequest) {
   };
   if (!newPassword || newPassword.length < 6) {
     return NextResponse.json(
-      { error: "Password baru minimal 6 karakter" },
+      { error: "New password must be at least 6 characters" },
       { status: 400 }
     );
   }
@@ -30,7 +30,7 @@ export async function POST(req: NextRequest) {
   }
   if (!bcrypt.compareSync(currentPassword ?? "", row.hash)) {
     return NextResponse.json(
-      { error: "Password saat ini salah" },
+      { error: "Current password is incorrect" },
       { status: 400 }
     );
   }

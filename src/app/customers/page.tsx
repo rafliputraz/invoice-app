@@ -1,40 +1,101 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { fmtIdr, fmtDate } from "@/lib/format";
+import { fmtIdr, fmtUsd, fmtDate, cleanName } from "@/lib/format";
 import type { CustomerMaster } from "@/lib/types";
 import AppShell from "@/components/AppShell";
+import Dialog from "@/components/Dialog";
+import Avatar from "@/components/Avatar";
+import CountUp from "@/components/CountUp";
+import useReveal from "@/components/useReveal";
+import {
+  IconDownload,
+  IconSearch,
+  IconPlus,
+  IconEdit,
+  IconTrash,
+  IconChevronRight,
+  IconCompany,
+  IconAlert,
+  IconCheck,
+} from "@/components/Icons";
 
 interface CustomerRow {
   customerName: string;
   invoiceCount: number;
+  /** Rupiah sums. USD-only invoices are summed separately — never added in. */
   totalIdr: number;
   outstandingIdr: number;
   overdueIdr: number;
+  totalUsd: number;
+  outstandingUsd: number;
+  overdueUsd: number;
   lastInvoiceDate: string;
 }
 
-function initialsOf(name: string): string {
+/** Rupiah leads; any USD is a separate line, because the two are never one. */
+function Amount({
+  idr,
+  usd,
+  tone,
+  size = "13.5px",
+}: {
+  idr: number;
+  usd: number;
+  tone?: "short" | "overdue" | "paid";
+  size?: string;
+}) {
+  if (!idr && !usd) return <span className="text-[13px] text-ink-3">—</span>;
+  const cls =
+    tone === "overdue"
+      ? "text-overdue"
+      : tone === "short"
+        ? "text-short"
+        : tone === "paid"
+          ? "text-paid"
+          : "text-ink";
   return (
-    name
-      .replace(/^(PT|CV|UD|PD)\.?\s+/i, "")
-      .split(/\s+/)
-      .map((w) => w[0])
-      .join("")
-      .slice(0, 2)
-      .toUpperCase() || "?"
+    <span className="block">
+      {idr > 0 && (
+        <span className={`fig block ${cls}`} style={{ fontSize: size }}>
+          Rp {fmtIdr(idr)}
+        </span>
+      )}
+      {usd > 0 && (
+        <span className={`fig block ${cls}`} style={{ fontSize: size }}>
+          $ {fmtUsd(usd)}
+        </span>
+      )}
+    </span>
   );
 }
 
-const inputCls =
-  "w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 transition-colors focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none";
+/** One labelled line in the detail panel. */
+function Detail({
+  label,
+  children,
+}: {
+  label: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="border-b border-line py-3 last:border-b-0">
+      <p className="text-[11.5px] font-semibold tracking-wide text-ink-3 uppercase">
+        {label}
+      </p>
+      <div className="mt-1 text-[13.5px] text-ink">{children}</div>
+    </div>
+  );
+}
 
 export default function CustomersPage() {
   const [rows, setRows] = useState<CustomerRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [master, setMaster] = useState<CustomerMaster[]>([]);
+  const [search, setSearch] = useState("");
   const [masterSearch, setMasterSearch] = useState("");
+  const [picked, setPicked] = useState<string | null>(null);
 
   const loadMaster = () => {
     fetch("/api/customers/master")
@@ -51,16 +112,18 @@ export default function CustomersPage() {
     loadMaster();
   }, []);
 
-  // Add/edit form for the master list.
+  // Add/edit dialog for the saved-customer records.
+  const [formOpen, setFormOpen] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [form, setForm] = useState({ name: "", address: "", taxId: "" });
   const [formMsg, setFormMsg] = useState("");
   const [busy, setBusy] = useState(false);
 
-  const resetForm = () => {
+  const openAdd = () => {
     setEditingId(null);
     setForm({ name: "", address: "", taxId: "" });
     setFormMsg("");
+    setFormOpen(true);
   };
 
   const editMaster = (c: CustomerMaster) => {
@@ -71,17 +134,17 @@ export default function CustomersPage() {
       taxId: c.taxId,
     });
     setFormMsg("");
+    setFormOpen(true);
   };
 
   const removeMaster = async (c: CustomerMaster) => {
     if (
       !confirm(
-        `Hapus "${c.name}" dari daftar customer tersimpan? (Invoice lama tidak terpengaruh)`
+        `Remove "${c.name}" from saved customers? Existing invoices are not affected.`
       )
     )
       return;
     await fetch(`/api/customers/master/${c.id}`, { method: "DELETE" });
-    if (editingId === c.id) resetForm();
     loadMaster();
   };
 
@@ -107,417 +170,581 @@ export default function CustomersPage() {
     setBusy(false);
     if (!res.ok) {
       const body = (await res.json().catch(() => ({}))) as { error?: string };
-      setFormMsg(body.error || "Gagal menyimpan");
+      setFormMsg(body.error || "Could not save. Try again.");
       return;
     }
-    resetForm();
+    setFormOpen(false);
     loadMaster();
   };
+
+  const q = search.trim().toLowerCase();
+  const filtered = q
+    ? rows.filter((r) => r.customerName.toLowerCase().includes(q))
+    : rows;
 
   const mq = masterSearch.trim().toLowerCase();
   const filteredMaster = mq
     ? master.filter((c) => c.name.toLowerCase().includes(mq))
     : master;
 
+  const totals = useMemo(
+    () => ({
+      outstanding: rows.reduce((a, r) => a + r.outstandingIdr, 0),
+      overdue: rows.reduce((a, r) => a + r.overdueIdr, 0),
+      owing: rows.filter((r) => r.outstandingIdr > 0 || r.outstandingUsd > 0)
+        .length,
+      chasing: rows.filter((r) => r.overdueIdr > 0 || r.overdueUsd > 0).length,
+    }),
+    [rows]
+  );
+
+  // The selected relationship, plus its saved record if one exists.
+  const selected = useMemo(
+    () => filtered.find((r) => r.customerName === picked) ?? filtered[0] ?? null,
+    [filtered, picked]
+  );
+  const selectedMaster = useMemo(
+    () =>
+      selected
+        ? master.find(
+            (m) =>
+              m.name.trim().toLowerCase() ===
+              selected.customerName.trim().toLowerCase()
+          ) ?? null
+        : null,
+    [master, selected]
+  );
+
+  const root = useReveal<HTMLDivElement>(filtered.length);
+
+  /** Share of a customer's billing that has already been collected. */
+  const collectedPct = (r: CustomerRow) =>
+    r.totalIdr > 0
+      ? Math.max(0, Math.round(((r.totalIdr - r.outstandingIdr) / r.totalIdr) * 100))
+      : 100;
+
   return (
     <AppShell
       active="customers"
-      title="Customer Management"
-      subtitle="Rekap tagihan per customer dan master data untuk isi otomatis invoice."
+      title="Customers"
+      subtitle="What each customer owes, and the saved details that fill an invoice in."
     >
-      {/* SECTION 1: Financial overview per customer */}
-      <div className="flex flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-card">
-        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 bg-slate-50/50 px-6 py-5">
-          <div className="flex items-center gap-3">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-indigo-50 text-indigo-600">
-              <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth="2"
-                  d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
+      <div ref={root}>
+        {/* ── Position at a glance ─────────────────────────────────────── */}
+        <section className="grid gap-4 sm:grid-cols-3">
+          <div className="anim-card card p-5">
+            <span className="iconchip bg-soft text-ink-2">
+              <IconCompany className="h-[18px] w-[18px]" />
+            </span>
+            <p className="fig mt-4 text-[20px] leading-tight">{rows.length}</p>
+            <p className="mt-1 text-[13px] font-semibold text-ink">
+              Customers billed
+            </p>
+            <p className="mt-0.5 text-[12px] text-ink-3">
+              {master.length} saved for quick invoicing
+            </p>
+          </div>
+          <div className="anim-card card p-5">
+            <span className="iconchip bg-open-soft text-open">
+              <IconCheck className="h-[18px] w-[18px]" strokeWidth={2} />
+            </span>
+            <p className="fig mt-4 text-[20px] leading-tight">
+              <CountUp
+                value={totals.outstanding}
+                format={(n) => `Rp ${fmtIdr(n)}`}
+              />
+            </p>
+            <p className="mt-1 text-[13px] font-semibold text-ink">
+              Outstanding
+            </p>
+            <p className="mt-0.5 text-[12px] text-ink-3">
+              across {totals.owing} customer{totals.owing === 1 ? "" : "s"}
+            </p>
+          </div>
+          <div className="anim-card card p-5">
+            <span className="iconchip bg-overdue-soft text-overdue">
+              <IconAlert className="h-[18px] w-[18px]" />
+            </span>
+            <p
+              className={`fig mt-4 text-[20px] leading-tight ${
+                totals.overdue > 0 ? "text-overdue" : ""
+              }`}
+            >
+              <CountUp
+                value={totals.overdue}
+                format={(n) => `Rp ${fmtIdr(n)}`}
+              />
+            </p>
+            <p className="mt-1 text-[13px] font-semibold text-ink">Overdue</p>
+            <p className="mt-0.5 text-[12px] text-ink-3">
+              {totals.chasing > 0
+                ? `${totals.chasing} to chase`
+                : "Nobody is late"}
+            </p>
+          </div>
+        </section>
+
+        {/* ── The book, and one relationship in detail ─────────────────── */}
+        <section className="mt-4 grid gap-4 xl:grid-cols-3">
+          <div className="anim-card card overflow-hidden xl:col-span-2">
+            <div className="flex flex-wrap items-center gap-3 p-5">
+              <div className="mr-auto flex items-center gap-2.5">
+                <h2 className="h-sec">Position by customer</h2>
+                <span className="pill pill-neutral">
+                  largest outstanding first
+                </span>
+              </div>
+              <div className="relative w-full sm:w-52">
+                <IconSearch className="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-ink-3" />
+                <input
+                  type="search"
+                  placeholder="Search customer"
+                  aria-label="Search customers"
+                  className="field pl-9"
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
                 />
-              </svg>
+              </div>
+              <a
+                href="/api/invoices/export"
+                title="Download a spreadsheet of every invoice"
+                className="btn"
+              >
+                <IconDownload className="h-4 w-4" />
+                Export
+              </a>
             </div>
-            <div>
-              <h3 className="text-base font-bold text-slate-800">
-                Financial Overview
-              </h3>
-              <p className="text-[11px] font-medium tracking-wider text-slate-500 uppercase">
-                Urut dari outstanding terbesar
-              </p>
+
+            <div className="overflow-x-auto">
+              <table className="register">
+                <thead>
+                  <tr>
+                    <th scope="col" className="pl-5">
+                      Customer
+                    </th>
+                    <th scope="col" className="text-right">
+                      Total
+                    </th>
+                    <th scope="col" className="text-right">
+                      Outstanding
+                    </th>
+                    <th scope="col" className="text-right">
+                      Overdue
+                    </th>
+                    <th scope="col" className="pr-5">
+                      Collected
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {loading ? (
+                    <tr>
+                      <td colSpan={5} className="note py-14 text-center">
+                        Loading…
+                      </td>
+                    </tr>
+                  ) : filtered.length === 0 ? (
+                    <tr>
+                      <td colSpan={5} className="py-16 text-center">
+                        <p className="text-[15px] font-bold text-ink">
+                          {rows.length === 0
+                            ? "No customers on the register yet"
+                            : "Nothing matches that search"}
+                        </p>
+                        <p className="note mt-1">
+                          {rows.length === 0
+                            ? "They appear here once their first invoice is issued."
+                            : "Try a different name."}
+                        </p>
+                      </td>
+                    </tr>
+                  ) : (
+                    filtered.map((row) => {
+                      const pct = collectedPct(row);
+                      const isOn =
+                        selected?.customerName === row.customerName;
+                      return (
+                        <tr
+                          key={row.customerName}
+                          className="anim-row cursor-pointer"
+                          data-selected={isOn}
+                          onClick={() => setPicked(row.customerName)}
+                        >
+                          <td className="pl-5">
+                            <div className="flex items-center gap-3">
+                              <Avatar
+                                name={row.customerName || "?"}
+                                size={36}
+                              />
+                              <div className="min-w-0">
+                                <p className="max-w-[24ch] truncate text-[13.5px] font-bold text-ink">
+                                  {cleanName(row.customerName) ||
+                                    "(no name recorded)"}
+                                </p>
+                                <p className="text-[11.5px] text-ink-3">
+                                  {row.invoiceCount} invoice
+                                  {row.invoiceCount === 1 ? "" : "s"} · last{" "}
+                                  {fmtDate(row.lastInvoiceDate)}
+                                </p>
+                              </div>
+                            </div>
+                          </td>
+                          <td className="text-right">
+                            <Amount idr={row.totalIdr} usd={row.totalUsd} />
+                          </td>
+                          <td className="text-right">
+                            <Amount
+                              idr={row.outstandingIdr}
+                              usd={row.outstandingUsd}
+                              tone="short"
+                            />
+                          </td>
+                          <td className="text-right">
+                            <Amount
+                              idr={row.overdueIdr}
+                              usd={row.overdueUsd}
+                              tone="overdue"
+                            />
+                          </td>
+                          <td className="pr-5">
+                            <div className="flex items-center gap-2.5">
+                              <div className="track w-20 shrink-0">
+                                <span
+                                  style={{
+                                    width: `${pct}%`,
+                                    background:
+                                      pct === 100
+                                        ? "var(--color-paid)"
+                                        : row.overdueIdr > 0
+                                          ? "var(--color-overdue)"
+                                          : "var(--color-open)",
+                                  }}
+                                />
+                              </div>
+                              <span className="fig text-[12.5px] text-ink-2">
+                                {pct}%
+                              </span>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })
+                  )}
+                </tbody>
+              </table>
             </div>
           </div>
-          <a
-            href="/api/invoices/export"
-            title="Download rekap semua invoice (CSV)"
-            className="rounded-md bg-blue-50 px-3 py-1.5 text-sm font-medium text-blue-600 transition-colors hover:bg-blue-100 hover:text-blue-700"
-          >
-            Export Report
-          </a>
-        </div>
 
-        <div className="overflow-x-auto">
-          <table className="w-full border-collapse text-left">
-            <thead>
-              <tr className="border-b border-slate-200 bg-white">
-                <th className="px-6 py-4 text-xs font-bold tracking-wider text-slate-400 uppercase">
-                  Customer
-                </th>
-                <th className="px-6 py-4 text-center text-xs font-bold tracking-wider text-slate-400 uppercase">
-                  Invoices
-                </th>
-                <th className="px-6 py-4 text-right text-xs font-bold tracking-wider text-slate-400 uppercase">
-                  Total (IDR)
-                </th>
-                <th className="px-6 py-4 text-right text-xs font-bold tracking-wider text-slate-400 uppercase">
-                  Outstanding
-                </th>
-                <th className="px-6 py-4 text-right text-xs font-bold tracking-wider text-slate-400 uppercase">
-                  Overdue
-                </th>
-                <th className="px-6 py-4 text-right text-xs font-bold tracking-wider text-slate-400 uppercase">
-                  Last Invoice
-                </th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100 bg-white">
-              {loading ? (
-                <tr>
-                  <td colSpan={6} className="px-6 py-10 text-center text-slate-400">
-                    Loading…
-                  </td>
-                </tr>
-              ) : rows.length === 0 ? (
-                <tr>
-                  <td colSpan={6} className="px-6 py-10 text-center text-slate-400">
-                    Belum ada invoice.
-                  </td>
-                </tr>
-              ) : (
-                rows.map((row) => (
-                  <tr
-                    key={row.customerName}
-                    className="transition-colors hover:bg-slate-50/80"
-                  >
-                    <td className="px-6 py-4">
-                      <div className="flex items-center">
-                        {row.customerName ? (
-                          <>
-                            <div className="mr-3 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-blue-100 text-xs font-bold text-blue-700">
-                              {initialsOf(row.customerName)}
-                            </div>
-                            <Link
-                              href={`/?q=${encodeURIComponent(row.customerName)}`}
-                              className="text-sm font-bold text-blue-600 transition-colors hover:text-blue-800"
-                            >
-                              {row.customerName}
-                            </Link>
-                          </>
-                        ) : (
-                          <>
-                            <div className="mr-3 flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-dashed border-slate-300 text-xs font-bold text-slate-400">
-                              ?
-                            </div>
-                            <span className="text-sm font-medium text-slate-400 italic">
-                              (tanpa nama)
-                            </span>
-                          </>
-                        )}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 text-center">
-                      <span className="rounded-full bg-slate-100 px-2.5 py-0.5 text-sm font-semibold text-slate-700">
-                        {row.invoiceCount}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 text-right">
-                      <span className="text-sm font-bold text-slate-900">
-                        {fmtIdr(row.totalIdr)}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 text-right">
-                      {row.outstandingIdr > 0 ? (
-                        <span className="inline-flex items-center rounded border border-amber-100 bg-amber-50 px-2.5 py-0.5 text-sm font-bold text-amber-600">
-                          {fmtIdr(row.outstandingIdr)}
-                        </span>
-                      ) : (
-                        <span className="text-sm font-medium text-slate-400">
-                          0
-                        </span>
-                      )}
-                    </td>
-                    <td className="px-6 py-4 text-right">
-                      {row.overdueIdr > 0 ? (
-                        <span className="inline-flex items-center rounded border border-rose-100 bg-rose-50 px-2.5 py-0.5 text-sm font-bold text-rose-600">
-                          {fmtIdr(row.overdueIdr)}
-                        </span>
-                      ) : (
-                        <span className="text-sm font-medium text-slate-400">
-                          0
-                        </span>
-                      )}
-                    </td>
-                    <td className="px-6 py-4 text-right whitespace-nowrap">
-                      <span className="text-sm font-medium text-slate-500">
-                        {fmtDate(row.lastInvoiceDate)}
-                      </span>
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
-      </div>
+          {/* Detail panel */}
+          <div className="anim-card card overflow-hidden">
+            {!selected ? (
+              <div className="flex h-full flex-col items-center justify-center p-10 text-center">
+                <span className="iconchip mb-3 h-12 w-12 bg-soft">
+                  <IconCompany className="h-5 w-5 text-ink-3" />
+                </span>
+                <p className="text-[15px] font-bold text-ink">
+                  No customer selected
+                </p>
+                <p className="note mt-1">
+                  Pick a row to see everything on file for them.
+                </p>
+              </div>
+            ) : (
+              <>
+                <div className="relative bg-gradient-to-br from-brand-soft to-open-soft px-5 pt-7 pb-5 text-center">
+                  <Avatar
+                    name={selected.customerName || "?"}
+                    size={72}
+                    className="mx-auto shadow-card"
+                  />
+                  <h3 className="mt-3.5 text-[15px] font-extrabold tracking-[-0.02em] text-ink">
+                    {cleanName(selected.customerName) || "(no name recorded)"}
+                  </h3>
+                  <p className="mt-1 text-[12.5px] text-ink-2">
+                    {selected.invoiceCount} invoice
+                    {selected.invoiceCount === 1 ? "" : "s"} · since{" "}
+                    {fmtDate(selected.lastInvoiceDate)}
+                  </p>
 
-      {/* SECTION 2: Master data */}
-      <div className="mt-12">
-        <div className="mb-4">
-          <h3 className="text-lg font-bold text-slate-900">
-            Customer Master Data
-          </h3>
-          <p className="mt-0.5 text-sm text-slate-500">
-            Data di sini muncul sebagai pilihan dropdown “Invoice to” saat
-            membuat invoice.
-          </p>
-        </div>
-
-        <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-          {/* Form card */}
-          <div className="lg:col-span-1">
-            <div className="sticky top-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-              <h4 className="mb-4 flex items-center gap-2 text-sm font-bold text-slate-800">
-                {editingId === null ? (
-                  <>
-                    <svg
-                      className="h-4 w-4 text-blue-500"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
+                  <div className="mt-4 flex items-center justify-center gap-2">
+                    <Link
+                      href={`/?q=${encodeURIComponent(selected.customerName)}`}
+                      className="btn btn-primary btn-sm"
                     >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth="2"
-                        d="M12 4v16m8-8H4"
-                      />
-                    </svg>
-                    Tambah Customer Baru
-                  </>
-                ) : (
-                  <>
-                    <svg
-                      className="h-4 w-4 text-blue-500"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth="2"
-                        d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
-                      />
-                    </svg>
-                    Edit Customer
-                  </>
-                )}
-              </h4>
+                      View invoices
+                      <IconChevronRight className="h-3.5 w-3.5" />
+                    </Link>
+                    {selectedMaster && (
+                      <button
+                        onClick={() => editMaster(selectedMaster)}
+                        className="btn btn-sm"
+                      >
+                        <IconEdit className="h-3.5 w-3.5" />
+                        Edit details
+                      </button>
+                    )}
+                  </div>
+                </div>
 
-              <form onSubmit={submitForm} className="space-y-4">
-                <div>
-                  <label className="mb-1.5 block text-xs font-semibold text-slate-700">
-                    Nama Customer <span className="text-rose-500">*</span>
-                  </label>
-                  <input
-                    className={inputCls}
-                    placeholder="Masukkan nama PT/Perusahaan"
-                    value={form.name}
-                    onChange={(e) => setForm({ ...form, name: e.target.value })}
-                    required
-                  />
-                </div>
-                <div>
-                  <label className="mb-1.5 block text-xs font-semibold text-slate-700">
-                    Tax ID (NPWP)
-                  </label>
-                  <input
-                    className={`${inputCls} font-mono`}
-                    placeholder="000000 000 0000 000"
-                    value={form.taxId}
-                    onChange={(e) =>
-                      setForm({ ...form, taxId: e.target.value })
-                    }
-                  />
-                </div>
-                <div>
-                  <label className="mb-1.5 flex items-center justify-between text-xs font-semibold text-slate-700">
-                    Alamat Lengkap
-                    <span className="text-[10px] font-normal text-slate-400">
-                      Satu baris per baris alamat
-                    </span>
-                  </label>
-                  <textarea
-                    rows={4}
-                    className={`${inputCls} resize-y`}
-                    placeholder="Jalan, Kota, Provinsi…"
-                    value={form.address}
-                    onChange={(e) =>
-                      setForm({ ...form, address: e.target.value })
-                    }
-                  />
-                </div>
-                <div className="flex items-center gap-2 pt-1">
-                  <button
-                    type="submit"
-                    disabled={busy}
-                    className="flex-1 rounded-lg bg-slate-900 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-slate-800 disabled:opacity-50"
-                  >
-                    {editingId === null ? "Simpan Data" : "Simpan Perubahan"}
-                  </button>
-                  {editingId !== null && (
+                <div className="px-5 py-4">
+                  <h4 className="h-sec mb-1 text-[14px]">
+                    Detailed information
+                  </h4>
+                  <Detail label="Total billed">
+                    <Amount
+                      idr={selected.totalIdr}
+                      usd={selected.totalUsd}
+                      size="14px"
+                    />
+                  </Detail>
+                  <Detail label="Outstanding">
+                    <Amount
+                      idr={selected.outstandingIdr}
+                      usd={selected.outstandingUsd}
+                      tone="short"
+                      size="14px"
+                    />
+                  </Detail>
+                  <Detail label="Overdue">
+                    <Amount
+                      idr={selected.overdueIdr}
+                      usd={selected.overdueUsd}
+                      tone="overdue"
+                      size="14px"
+                    />
+                  </Detail>
+                  <Detail label="Tax ID (NPWP)">
+                    {selectedMaster?.taxId ? (
+                      <span className="fig text-[13px]">
+                        {selectedMaster.taxId}
+                      </span>
+                    ) : (
+                      <span className="text-ink-3">Not on file</span>
+                    )}
+                  </Detail>
+                  <Detail label="Address">
+                    {selectedMaster?.addressLines.filter(Boolean).length ? (
+                      <span className="block leading-relaxed">
+                        {selectedMaster.addressLines
+                          .filter(Boolean)
+                          .join(", ")}
+                      </span>
+                    ) : (
+                      <span className="text-ink-3">Not on file</span>
+                    )}
+                  </Detail>
+
+                  {!selectedMaster && (
                     <button
-                      type="button"
-                      onClick={resetForm}
-                      className="rounded-lg border border-slate-300 px-4 py-2.5 text-sm font-semibold text-slate-600 transition-colors hover:bg-slate-50"
+                      onClick={() => {
+                        setEditingId(null);
+                        setForm({
+                          name: cleanName(selected.customerName),
+                          address: "",
+                          taxId: "",
+                        });
+                        setFormMsg("");
+                        setFormOpen(true);
+                      }}
+                      className="btn mt-4 w-full"
                     >
-                      Batal
+                      <IconPlus className="h-4 w-4" />
+                      Save their details
                     </button>
                   )}
                 </div>
-                {formMsg && (
-                  <p className="text-xs text-rose-500">{formMsg}</p>
-                )}
-              </form>
+              </>
+            )}
+          </div>
+        </section>
+
+        {/* ── Saved records ───────────────────────────────────────────── */}
+        <section className="anim-card card mt-4 overflow-hidden">
+          <div className="flex flex-wrap items-center gap-3 p-5">
+            <div className="mr-auto">
+              <div className="flex items-center gap-2.5">
+                <h2 className="h-sec">Saved customer details</h2>
+                <span className="pill pill-neutral">{master.length} saved</span>
+              </div>
+              <p className="note mt-1 max-w-[70ch]">
+                Anything saved here appears in the &ldquo;Invoice to&rdquo;
+                picker when you create an invoice, and fills the address and
+                NPWP for you.
+              </p>
             </div>
+            <div className="relative w-full sm:w-52">
+              <IconSearch className="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-ink-3" />
+              <input
+                type="search"
+                placeholder="Search saved"
+                aria-label="Search saved customers"
+                className="field pl-9"
+                value={masterSearch}
+                onChange={(e) => setMasterSearch(e.target.value)}
+              />
+            </div>
+            <button onClick={openAdd} className="btn btn-primary">
+              <IconPlus className="h-4 w-4" />
+              Add customer
+            </button>
           </div>
 
-          {/* Saved list card */}
-          <div className="lg:col-span-2">
-            <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-              <div className="flex items-center justify-between gap-3 border-b border-slate-100 px-5 py-4">
-                <h4 className="text-sm font-bold text-slate-800">
-                  Tersimpan ({master.length})
-                </h4>
-                <div className="relative w-48">
-                  <svg
-                    className="absolute top-1/2 left-2.5 h-3.5 w-3.5 -translate-y-1/2 text-slate-400"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth="2"
-                      d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-                    />
-                  </svg>
-                  <input
-                    type="text"
-                    placeholder="Cari nama…"
-                    className="w-full rounded border border-slate-200 bg-slate-50 py-1.5 pr-3 pl-8 text-xs text-slate-900 transition-colors outline-none focus:border-blue-500 focus:bg-white"
-                    value={masterSearch}
-                    onChange={(e) => setMasterSearch(e.target.value)}
-                  />
-                </div>
-              </div>
-
-              <ul className="divide-y divide-slate-100">
+          <div className="overflow-x-auto">
+            <table className="register">
+              <thead>
+                <tr>
+                  <th scope="col" className="pl-5">
+                    Name
+                  </th>
+                  <th scope="col">Tax ID (NPWP)</th>
+                  <th scope="col">Address</th>
+                  <th scope="col" className="pr-5 text-right">
+                    Actions
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
                 {filteredMaster.length === 0 ? (
-                  <li className="p-8 text-center">
-                    <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-slate-100">
-                      <svg
-                        className="h-6 w-6 text-slate-400"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth="2"
-                          d="M12 4v16m8-8H4"
-                        />
-                      </svg>
-                    </div>
-                    <p className="text-sm font-medium text-slate-600">
-                      {master.length === 0
-                        ? "Belum ada customer tersimpan"
-                        : "Tidak ada yang cocok"}
-                    </p>
-                    <p className="mt-1 text-xs text-slate-400">
-                      {master.length === 0
-                        ? "Tambahkan customer baru melalui form di sebelah kiri."
-                        : "Coba kata kunci lain."}
-                    </p>
-                  </li>
+                  <tr>
+                    <td colSpan={4} className="py-14 text-center">
+                      <p className="text-[15px] font-bold text-ink">
+                        {master.length === 0
+                          ? "No saved customers yet"
+                          : "Nothing matches that search"}
+                      </p>
+                      <p className="note mt-1">
+                        {master.length === 0
+                          ? "Save one and it fills the invoice form for you."
+                          : "Try a different name."}
+                      </p>
+                    </td>
+                  </tr>
                 ) : (
                   filteredMaster.map((c) => (
-                    <li
-                      key={c.id}
-                      className="group flex items-start gap-4 p-5 transition-colors hover:bg-slate-50"
-                    >
-                      <div className="mt-1 flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-emerald-50 text-emerald-600">
-                        <svg
-                          className="h-5 w-5"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth="2"
-                            d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"
-                          />
-                        </svg>
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <div className="flex items-start justify-between">
-                          <div className="min-w-0">
-                            <h5 className="mb-1 text-sm font-bold text-slate-900">
-                              {c.name}
-                            </h5>
-                            <p className="mb-2 text-xs leading-relaxed text-slate-500">
-                              {c.addressLines.filter(Boolean).join(", ") || "—"}
-                            </p>
-                            {c.taxId && (
-                              <div className="inline-flex items-center rounded border border-slate-200 bg-slate-100 px-2 py-0.5">
-                                <span className="mr-1.5 text-[10px] font-bold text-slate-400 uppercase">
-                                  NPWP
-                                </span>
-                                <span className="font-mono text-xs text-slate-700">
-                                  {c.taxId}
-                                </span>
-                              </div>
-                            )}
-                          </div>
-                          <div className="ml-4 flex shrink-0 items-center gap-2 opacity-0 transition-opacity group-hover:opacity-100">
-                            <button
-                              onClick={() => editMaster(c)}
-                              className="rounded px-2 py-1 text-xs font-semibold text-blue-600 transition-colors hover:bg-blue-50 hover:text-blue-800"
-                            >
-                              Edit
-                            </button>
-                            <button
-                              onClick={() => removeMaster(c)}
-                              className="rounded px-2 py-1 text-xs font-semibold text-rose-500 transition-colors hover:bg-rose-50 hover:text-rose-700"
-                            >
-                              Hapus
-                            </button>
-                          </div>
+                    <tr key={c.id} className="anim-row">
+                      <td className="pl-5">
+                        <div className="flex items-center gap-3">
+                          <Avatar name={c.name} size={36} />
+                          <p className="max-w-[26ch] truncate text-[13.5px] font-bold text-ink">
+                            {cleanName(c.name)}
+                          </p>
                         </div>
-                      </div>
-                    </li>
+                      </td>
+                      <td>
+                        {c.taxId ? (
+                          <span className="fig text-[13px]">{c.taxId}</span>
+                        ) : (
+                          <span className="text-[13px] text-ink-3">—</span>
+                        )}
+                      </td>
+                      <td>
+                        <p className="max-w-[42ch] truncate text-[13px] text-ink-2">
+                          {c.addressLines.filter(Boolean).join(", ") ||
+                            "No address recorded"}
+                        </p>
+                      </td>
+                      <td className="pr-5">
+                        <div className="flex items-center justify-end gap-1">
+                          <button
+                            onClick={() => editMaster(c)}
+                            title={`Edit ${c.name}`}
+                            aria-label={`Edit ${c.name}`}
+                            className="btn btn-quiet p-1.5"
+                          >
+                            <IconEdit className="h-4 w-4" />
+                          </button>
+                          <button
+                            onClick={() => removeMaster(c)}
+                            title={`Remove ${c.name}`}
+                            aria-label={`Remove ${c.name}`}
+                            className="btn btn-quiet p-1.5 hover:text-overdue"
+                          >
+                            <IconTrash className="h-4 w-4" />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
                   ))
                 )}
-              </ul>
-            </div>
+              </tbody>
+            </table>
           </div>
-        </div>
+        </section>
       </div>
+
+      <Dialog
+        open={formOpen}
+        onClose={() => setFormOpen(false)}
+        title={editingId === null ? "Add a customer" : "Edit customer"}
+        note="These details fill the invoice form automatically."
+        footer={
+          <>
+            <button
+              type="button"
+              onClick={() => setFormOpen(false)}
+              className="btn"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              form="customer-form"
+              disabled={busy}
+              className="btn btn-primary"
+            >
+              {busy ? "Saving…" : editingId === null ? "Add customer" : "Save"}
+            </button>
+          </>
+        }
+      >
+        <form id="customer-form" onSubmit={submitForm} className="space-y-4">
+          <label className="block">
+            <span className="lbl lbl-strong mb-1.5 block">
+              Name <span className="text-brand">*</span>
+            </span>
+            <input
+              className="field"
+              placeholder="PT. Example Indonesia"
+              value={form.name}
+              onChange={(e) => setForm({ ...form, name: e.target.value })}
+              required
+            />
+          </label>
+
+          <label className="block">
+            <span className="lbl lbl-strong mb-1.5 block">Tax ID (NPWP)</span>
+            <input
+              className="field"
+              placeholder="00.000.000.0-000.000"
+              value={form.taxId}
+              onChange={(e) => setForm({ ...form, taxId: e.target.value })}
+            />
+          </label>
+
+          <label className="block">
+            <span className="lbl lbl-strong mb-1.5 flex items-baseline justify-between gap-2">
+              Address
+              <span className="font-normal text-ink-3">one line each</span>
+            </span>
+            <textarea
+              rows={4}
+              className="field resize-y"
+              placeholder={"Street\nCity\nProvince"}
+              value={form.address}
+              onChange={(e) => setForm({ ...form, address: e.target.value })}
+            />
+          </label>
+
+          {formMsg && (
+            <p
+              role="alert"
+              className="rounded-xl bg-overdue-soft px-3.5 py-2.5 text-[13px] font-semibold text-overdue"
+            >
+              {formMsg}
+            </p>
+          )}
+        </form>
+      </Dialog>
     </AppShell>
   );
 }

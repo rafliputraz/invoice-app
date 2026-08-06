@@ -8,6 +8,8 @@ import { defaultInvoice } from "@/lib/defaults";
 import InvoiceForm from "./InvoiceForm";
 import InvoicePreview from "./InvoicePreview";
 import IdleLogout from "./IdleLogout";
+import Marking from "./Marking";
+import { IconDownload, IconPrint } from "./Icons";
 import { downloadInvoicePdf, invoicePdfName } from "@/lib/pdf";
 
 export default function InvoiceEditor({
@@ -43,9 +45,9 @@ export default function InvoiceEditor({
   const numberError = !customNumber
     ? ""
     : !trimmedNo
-      ? "Nomor invoice tidak boleh kosong"
+      ? "Invoice number cannot be empty"
       : numberTaken
-        ? `Nomor invoice "${trimmedNo}" sudah dipakai`
+        ? `Invoice number "${trimmedNo}" is already in use`
         : "";
 
   const download = async () => {
@@ -150,104 +152,65 @@ export default function InvoiceEditor({
   };
 
   return (
-    <div className="print-root min-h-screen bg-slate-100">
+    <div className="print-root app-font flex h-screen flex-col overflow-hidden bg-bg text-ink antialiased">
       <IdleLogout />
       {/* Toolbar */}
-      <header className="no-print app-font sticky top-0 z-20 flex h-14 items-center justify-between border-b border-slate-200 bg-white px-4 shadow-sm sm:px-6">
-        <div className="flex min-w-0 items-center gap-4">
-          <Link
-            href="/"
-            className="group flex shrink-0 items-center text-sm font-medium text-slate-500 transition-colors hover:text-blue-600"
-          >
-            <svg
-              className="mr-1.5 h-4 w-4 transform transition-transform group-hover:-translate-x-1"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth="2"
-                d="M10 19l-7-7m0 0l7-7m-7 7h18"
-              />
-            </svg>
-            Invoices
+      <header className="no-print z-20 flex h-[64px] shrink-0 items-center justify-between gap-3 border-b border-line bg-card px-4 sm:px-6">
+        <div className="flex min-w-0 items-center gap-3">
+          <Link href="/" className="btn btn-sm shrink-0">
+            ← Dashboard
           </Link>
-          <div className="h-5 w-px shrink-0 bg-slate-300" />
-          <span className="truncate text-sm font-bold text-slate-900">
-            {isNew ? "New Invoice" : `Invoice ${data.invoiceNo}`}
-          </span>
+          <span aria-hidden className="h-5 w-px shrink-0 bg-line" />
+          {isNew ? (
+            <span className="text-[14px] font-bold text-ink">New invoice</span>
+          ) : (
+            <Marking no={data.invoiceNo} />
+          )}
         </div>
 
-        <div className="flex shrink-0 items-center gap-3">
+        <div className="flex shrink-0 items-center gap-2">
           {savedMsg && (
-            <span className="mr-1 hidden items-center gap-1 text-xs text-slate-400 sm:flex">
-              <svg
-                className="h-3 w-3"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth="2"
-                  d="M5 13l4 4L19 7"
-                />
-              </svg>
+            <span
+              role="status"
+              className="pill pill-paid mr-1 hidden max-w-[30ch] truncate sm:inline-flex"
+            >
               {savedMsg}
             </span>
           )}
-          <button
-            onClick={() => window.print()}
-            className="rounded-lg border border-slate-300 bg-white px-4 py-1.5 text-sm font-semibold text-slate-700 shadow-sm transition-colors hover:bg-slate-50 hover:text-slate-900"
-          >
-            Print / PDF
+          <button onClick={() => window.print()} className="btn btn-sm">
+            <IconPrint className="h-4 w-4" />
+            <span className="hidden sm:inline">Print</span>
           </button>
           <button
             onClick={download}
             disabled={downloading}
-            className="flex items-center gap-1.5 rounded-lg border border-slate-300 bg-white px-4 py-1.5 text-sm font-semibold text-slate-700 shadow-sm transition-colors hover:bg-slate-50 hover:text-slate-900 disabled:opacity-50"
+            className="btn btn-sm"
           >
-            <svg
-              className="h-4 w-4"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth="2"
-                d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5 5 5-5M12 15V3"
-              />
-            </svg>
-            {downloading ? "Preparing…" : "Download"}
+            <IconDownload className="h-4 w-4" />
+            <span className="hidden sm:inline">
+              {downloading ? "Preparing…" : "PDF"}
+            </span>
           </button>
           <button
             onClick={save}
             disabled={saving || !!numberError}
             title={numberError || undefined}
-            className="rounded-lg bg-blue-600 px-5 py-1.5 text-sm font-semibold text-white shadow-md shadow-blue-500/20 transition-all hover:bg-blue-700 disabled:opacity-50"
+            className="btn btn-primary btn-sm"
           >
-            {saving ? "Saving…" : isNew ? "Save" : "Save Changes"}
+            {saving ? "Saving…" : isNew ? "Save" : "Save changes"}
           </button>
         </div>
       </header>
 
-      {/* Split screen: form left, live preview right */}
-      <div className="flex h-[calc(100vh-56px)]">
-        <aside className="no-print app-font z-10 flex w-full shrink-0 flex-col border-r border-slate-200 bg-white shadow-[4px_0_24px_rgba(0,0,0,0.02)] sm:w-[460px] lg:w-[540px]">
-          <div className="border-b border-slate-100 bg-slate-50/50 p-4">
-            <h2 className="text-sm font-bold text-slate-800">
-              Invoice Configuration
-            </h2>
-            <p className="mt-0.5 text-xs text-slate-500">
-              Isi detail di bawah — preview di kanan mengikuti secara langsung.
+      {/* The form on the left, the document it produces on the right. */}
+      <div className="flex min-h-0 flex-1">
+        <aside className="no-print app-font z-10 flex min-h-0 w-full shrink-0 flex-col border-r border-line bg-bg sm:w-[440px] lg:w-[520px]">
+          <div className="shrink-0 border-b border-line bg-card px-4 py-2.5">
+            <p className="text-[12.5px] text-ink-2">
+              The document on the right redraws as you type.
             </p>
           </div>
-          <div className="flex-1 overflow-y-auto bg-slate-50/30 p-4">
+          <div className="min-h-0 flex-1 overflow-y-auto p-4">
             <InvoiceForm
               data={data}
               setData={setData}
@@ -260,8 +223,8 @@ export default function InvoiceEditor({
             <div className="h-8" />
           </div>
         </aside>
-        <div className="print-area hidden flex-1 overflow-auto bg-slate-200/60 p-4 sm:block sm:p-8 print:block print:bg-white">
-          <div className="mx-auto w-fit pb-12 shadow-paper print:m-0 print:w-auto print:pb-0 print:shadow-none">
+        <div className="print-area hidden min-h-0 flex-1 overflow-auto bg-bg p-4 sm:block sm:p-8 print:block print:bg-white">
+          <div className="mx-auto w-fit pb-12 shadow-pop print:m-0 print:w-auto print:pb-0 print:shadow-none">
             <InvoicePreview data={data} />
           </div>
         </div>

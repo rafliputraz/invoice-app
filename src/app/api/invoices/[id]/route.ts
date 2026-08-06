@@ -44,7 +44,7 @@ export async function PUT(req: NextRequest, { params }: Params) {
   const wantsNo = data.invoiceNo?.trim() ?? "";
   if (manual && wantsNo === "") {
     return NextResponse.json(
-      { error: "Nomor invoice manual tidak boleh kosong" },
+      { error: "Invoice number cannot be empty" },
       { status: 400 }
     );
   }
@@ -55,7 +55,7 @@ export async function PUT(req: NextRequest, { params }: Params) {
       .get(wantsNo, Number(id));
     if (clash) {
       return NextResponse.json(
-        { error: `Nomor invoice "${wantsNo}" sudah dipakai` },
+        { error: `Invoice number "${wantsNo}" is already in use` },
         { status: 409 }
       );
     }

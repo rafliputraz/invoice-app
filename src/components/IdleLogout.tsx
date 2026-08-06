@@ -79,45 +79,32 @@ export default function IdleLogout() {
   if (remaining === null) return null;
 
   return (
-    <div className="app-font fixed inset-0 z-[70] flex items-center justify-center bg-black/50 p-4">
-      <div className="w-full max-w-sm overflow-hidden rounded-2xl bg-white shadow-2xl">
-        <div className="flex flex-col items-center px-6 pt-6 pb-2 text-center">
-          <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-amber-50 text-amber-600">
-            <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth="2"
-                d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
-              />
-            </svg>
-          </div>
-          <h2 className="text-lg font-bold text-slate-900">
-            Anda masih di sana?
-          </h2>
-          <p className="mt-1 text-sm text-slate-500">
-            Karena tidak ada aktivitas, Anda akan otomatis keluar dalam
-          </p>
-          <div className="mt-3 font-mono text-3xl font-extrabold text-amber-600">
-            {remaining}
-            <span className="ml-1 text-base font-bold text-slate-400">
-              detik
-            </span>
-          </div>
+    <div
+      role="alertdialog"
+      aria-label="Session about to expire"
+      className="app-font fixed inset-0 z-[70] flex items-center justify-center bg-black/70 p-4"
+    >
+      <div className="panel settle w-full max-w-sm shadow-pop">
+        <div className="panel-head px-4 py-2.5">
+          <h2 className="lbl lbl-strong">Session about to expire</h2>
         </div>
-        <div className="flex gap-2 p-6">
-          <button
-            onClick={logout}
-            className="flex-1 rounded-lg border border-slate-300 px-4 py-2.5 text-sm font-semibold text-slate-600 transition-colors hover:bg-slate-50"
-          >
-            Keluar sekarang
+
+        <div className="px-4 py-5 text-center">
+          <p className="note text-[13px]">
+            No activity for a while. You will be signed out in
+          </p>
+          <p className="fig mt-2 text-[44px] leading-none tracking-[-0.04em] text-overdue">
+            {remaining}
+            <span className="lbl ml-2 align-middle">seconds</span>
+          </p>
+        </div>
+
+        <div className="flex gap-2 border-t border-line bg-soft px-4 py-3">
+          <button onClick={logout} className="btn flex-1">
+            Sign out now
           </button>
-          <button
-            onClick={stay}
-            autoFocus
-            className="flex-1 rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white shadow-md shadow-blue-500/20 transition-colors hover:bg-blue-700"
-          >
-            Tetap login
+          <button onClick={stay} autoFocus className="btn btn-primary flex-1">
+            Stay signed in
           </button>
         </div>
       </div>

@@ -17,33 +17,33 @@ interface TourStep {
 const STEPS: TourStep[] = [
   {
     target: '[data-tour="stats"]',
-    title: "Kartu ringkasan",
-    body: "Angka penting sekilas: jumlah & total invoice bulan ini, total yang belum dibayar (Outstanding), dan yang sudah lewat jatuh tempo (Overdue, merah) — itulah tagihan yang harus segera dikejar.",
+    title: "Where the money stands",
+    body: "Four figures covering every invoice, whatever the filters below are set to: what is still outstanding, what has been billed in total, what is past its due date, and what has actually reached the bank. Outstanding sits on the red card with a bar showing how much you have collected so far.",
   },
   {
     target: '[data-tour="filters"]',
-    title: "Cari, saring & export",
-    body: "Ketik nomor invoice atau nama customer untuk mencari. Tab di atas tabel menyaring status (All / Unpaid / Overdue / Paid), dropdown memilih bulan, dan tombol Export mengunduh rekap CSV (bisa dibuka di Excel) sesuai filter yang aktif.",
+    title: "Finding an invoice",
+    body: "Search by number or customer, then narrow with the status buttons, the month dropdown or the sort. Export downloads a spreadsheet matching whatever filters are on.",
   },
   {
     target: '[data-tour="table"]',
-    title: "Daftar invoice",
-    body: "Klik nomor invoice untuk membuka & mengedit. Kolom Due menunjukkan jatuh tempo (merah = telat). Klik badge Status untuk menandai Paid saat pembayaran masuk. Delete memindahkan ke Trash, tidak langsung hilang.",
+    title: "The invoice table",
+    body: "Click an invoice number to open and edit it, the printer to print it straight away, or the status pill to record a payment. Tick the boxes on the left to move several to the trash at once.",
   },
   {
     target: '[data-tour="customers"]',
-    title: "Data customer",
-    body: "Rekap tagihan per customer (siapa yang paling banyak nunggak) sekaligus tempat menyimpan data customer — nama, alamat, Tax ID — supaya saat membuat invoice tinggal pilih dari dropdown.",
+    title: "Customers",
+    body: "What each customer owes, largest outstanding first, with a bar showing how much of their billing has been collected. Click one to see everything on file for them — and save their address and NPWP so the invoice form fills itself in.",
   },
   {
     target: '[data-tour="new-invoice"]',
-    title: "Buat invoice baru",
-    body: "Mulai dari sini. Nomor invoice terisi otomatis; pilih customer tersimpan dari dropdown (atau isi manual), lengkapi rincian biaya dan termin pembayaran (kosongkan jika customer bayar langsung).",
+    title: "New invoice",
+    body: "Start here. The number fills in automatically, saved customers fill their own details, and the payment term decides when the invoice starts counting down towards its due date.",
   },
   {
     target: '[data-tour="help"]',
-    title: "Masih belum jelas?",
-    body: "Buka tombol Panduan ini kapan saja — isinya pedoman lengkap langkah demi langkah cara memakai aplikasi dengan benar.",
+    title: "Still unclear?",
+    body: "The guide walks through every part of the app step by step. It is always in the sidebar, bottom left.",
   },
 ];
 
@@ -152,51 +152,46 @@ export default function GuidedTour() {
     <div className="fixed inset-0 z-[60]" role="dialog" aria-modal="true">
       {/* Spotlight: transparent hole + huge shadow darkens everything else. */}
       <div
-        className="absolute rounded-lg transition-all duration-300"
+        className="absolute rounded-xs outline-2 outline-white transition-all duration-300"
         style={{
           top: spot.top,
           left: spot.left,
           width: spot.width,
           height: spot.height,
-          boxShadow: "0 0 0 9999px rgba(0,0,0,0.65)",
+          boxShadow: "0 0 0 9999px rgba(0,0,0,0.72)",
         }}
       />
       <div
-        className="absolute w-80 rounded-xl bg-white p-4 shadow-2xl transition-all duration-300"
+        className="app-font panel absolute w-80 shadow-pop transition-all duration-300"
         style={{ top: tooltipTop, left: tooltipLeft }}
       >
-        <div className="mb-1 flex items-center justify-between">
-          <h3 className="text-sm font-bold text-gray-800">
-            {STEPS[step].title}
-          </h3>
-          <span className="text-xs text-gray-400">
+        <div className="panel-head flex items-baseline justify-between gap-2 px-3.5 py-2">
+          <h3 className="lbl lbl-strong">{STEPS[step].title}</h3>
+          <span className="lbl tabular-nums">
             {step + 1}/{STEPS.length}
           </span>
         </div>
-        <p className="mb-3 text-xs leading-relaxed text-gray-600">
+        <p className="px-3.5 py-3 text-xs leading-relaxed text-ink-2">
           {STEPS[step].body}
         </p>
-        <div className="flex items-center justify-between">
-          <button
-            onClick={finish}
-            className="text-xs text-gray-400 hover:text-gray-600"
-          >
-            Lewati
+        <div className="flex items-center justify-between gap-2 border-t border-line bg-soft px-3.5 py-2.5">
+          <button onClick={finish} className="btn btn-quiet btn-sm">
+            Skip
           </button>
-          <div className="flex gap-2">
+          <div className="flex gap-1.5">
             {step > 0 && (
               <button
                 onClick={() => setStep(step - 1)}
-                className="rounded border border-gray-300 px-3 py-1.5 text-xs text-gray-600 hover:bg-gray-50"
+                className="btn btn-sm"
               >
-                Kembali
+                Back
               </button>
             )}
             <button
               onClick={() => (isLast ? finish() : setStep(step + 1))}
-              className="rounded bg-blue-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-blue-700"
+              className="btn btn-primary btn-sm"
             >
-              {isLast ? "Selesai" : "Lanjut"}
+              {isLast ? "Done" : "Next"}
             </button>
           </div>
         </div>

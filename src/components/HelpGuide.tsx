@@ -1,18 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
+import Dialog from "./Dialog";
 import { TOUR_EVENT } from "./GuidedTour";
-
-function Step({ n, children }: { n: number; children: React.ReactNode }) {
-  return (
-    <li className="flex gap-2">
-      <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-blue-100 text-xs font-semibold text-blue-700">
-        {n}
-      </span>
-      <span>{children}</span>
-    </li>
-  );
-}
+import { IconHelp } from "./Icons";
 
 function GuideSection({
   title,
@@ -23,41 +14,35 @@ function GuideSection({
 }) {
   return (
     <section>
-      <h3 className="mb-2 text-sm font-semibold text-gray-800">{title}</h3>
-      <div className="space-y-2 text-sm text-gray-600">{children}</div>
+      <h3 className="lbl lbl-strong mb-2">{title}</h3>
+      <div className="max-w-[70ch] space-y-2 text-[13px] leading-relaxed text-ink-2">
+        {children}
+      </div>
     </section>
   );
 }
 
-function Badge({ tone, children }: { tone: "green" | "amber" | "red" | "gray"; children: React.ReactNode }) {
-  const cls = {
-    green: "bg-green-100 text-green-700",
-    amber: "bg-amber-100 text-amber-700",
-    red: "bg-red-100 text-red-700",
-    gray: "bg-gray-100 text-gray-500",
-  }[tone];
+function Step({ n, children }: { n: number; children: React.ReactNode }) {
   return (
-    <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${cls}`}>
-      {children}
-    </span>
+    <li className="flex gap-2.5">
+      <span
+        aria-hidden
+        className="mt-px flex h-5 w-5 shrink-0 items-center justify-center rounded-xs bg-soft text-[11px] font-semibold text-ink-2"
+      >
+        {n}
+      </span>
+      <span>{children}</span>
+    </li>
   );
 }
 
 export default function HelpGuide({
   variant = "button",
 }: {
-  /** "sidebar" renders a dark-sidebar nav item instead of a plain button. */
+  /** "sidebar" renders the call-to-action inside the sidebar's help card. */
   variant?: "button" | "sidebar";
 }) {
   const [open, setOpen] = useState(false);
-
-  // Close on Escape.
-  useEffect(() => {
-    if (!open) return;
-    const onKey = (e: KeyboardEvent) => e.key === "Escape" && setOpen(false);
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [open]);
 
   return (
     <>
@@ -65,198 +50,182 @@ export default function HelpGuide({
         <button
           onClick={() => setOpen(true)}
           data-tour="help"
-          title="Panduan penggunaan aplikasi"
-          className="flex w-full items-center rounded-lg px-3 py-2.5 text-sm font-medium text-slate-400 transition-colors hover:bg-slate-800/50 hover:text-white"
+          title="How to use this app"
+          className="btn btn-primary btn-sm w-full"
         >
-          <svg
-            className="mr-3 h-5 w-5 opacity-70"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth="2"
-              d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-            />
-          </svg>
-          Panduan
+          <IconHelp className="h-4 w-4" />
+          Open the guide
         </button>
       ) : (
         <button
           onClick={() => setOpen(true)}
           data-tour="help"
-          title="Panduan penggunaan aplikasi"
-          className="rounded border border-gray-300 px-3 py-2 text-sm text-gray-600 hover:bg-gray-50"
+          title="How to use this app"
+          className="btn btn-sm"
         >
-          ? Panduan
+          <IconHelp className="h-4 w-4" />
+          Guide
         </button>
       )}
 
-      {open && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
-          onClick={() => setOpen(false)}
-        >
-          <div
-            className="flex max-h-[85vh] w-full max-w-2xl flex-col overflow-hidden rounded-xl bg-white shadow-2xl"
-            onClick={(e) => e.stopPropagation()}
+      <Dialog
+        open={open}
+        onClose={() => setOpen(false)}
+        title="How to use this app"
+        note="Working the invoice register end to end"
+        width="lg"
+        footer={
+          <button
+            onClick={() => {
+              setOpen(false);
+              window.dispatchEvent(new Event(TOUR_EVENT));
+            }}
+            className="btn btn-quiet btn-sm"
           >
-            <div className="flex items-center justify-between border-b border-gray-200 px-6 py-4">
-              <div>
-                <h2 className="text-base font-bold text-gray-800">
-                  Panduan Penggunaan
-                </h2>
-                <p className="text-xs text-gray-500">
-                  Cara memakai aplikasi invoice SFL dengan benar
-                </p>
-              </div>
-              <button
-                onClick={() => setOpen(false)}
-                className="rounded p-1.5 text-gray-400 hover:bg-gray-100 hover:text-gray-600"
-                title="Tutup"
-              >
-                ✕
-              </button>
-            </div>
+            ↻ Replay the walkthrough
+          </button>
+        }
+      >
+        <div className="max-h-[64vh] space-y-6 overflow-y-auto pr-1">
+          <GuideSection title="1 · Creating an invoice">
+            <ol className="space-y-2">
+              <Step n={1}>
+                Click <b>New Invoice</b> at the top right, then choose a fresh
+                invoice or an addendum on an existing bill of lading.
+              </Step>
+              <Step n={2}>
+                The invoice number fills in <b>automatically</b> from the date.
+                Turn on manual entry only for backlog numbers.
+              </Step>
+              <Step n={3}>
+                Fill in the customer under <i>Invoice to</i> — or faster, pick a
+                saved customer and the name, address and NPWP fill themselves.
+                Then complete the shipment details and the charges. For USD
+                lines, set the <b>exchange rate</b> so the rupiah conversion is
+                right.
+              </Step>
+              <Step n={4}>
+                Set <b>payment terms in days</b> (7, 14, 40 — whatever you
+                agreed). <b>Leave it empty if they pay on the spot</b>; an
+                invoice with no term never counts as late.
+              </Step>
+              <Step n={5}>
+                Click <b>Save</b>. The invoice takes its final number and joins
+                the register.
+              </Step>
+            </ol>
+          </GuideSection>
 
-            <div className="space-y-6 overflow-y-auto px-6 py-5">
-              <GuideSection title="1. Membuat invoice baru">
-                <ol className="space-y-1.5">
-                  <Step n={1}>
-                    Klik tombol <b>+ New Invoice</b> di kanan atas.
-                  </Step>
-                  <Step n={2}>
-                    Nomor invoice terisi <b>otomatis</b> mengikuti tanggal —
-                    tidak perlu (dan tidak bisa) diketik manual.
-                  </Step>
-                  <Step n={3}>
-                    Isi data customer (<i>Invoice to</i>) — atau lebih cepat:
-                    <b> pilih dari dropdown customer tersimpan</b>, nama/alamat/
-                    Tax ID langsung terisi (tombol <b>✕ Clear</b> untuk
-                    mengosongkan lagi). Lalu lengkapi detail shipment dan
-                    rincian biaya (<i>Charges</i>). Untuk item USD, jangan lupa
-                    isi <b>Exchange rate</b> agar konversi IDR-nya benar.
-                  </Step>
-                  <Step n={4}>
-                    Isi <b>Payment due (days)</b> = jangka waktu pembayaran
-                    dalam hari (mis. 7, 14, 40) sesuai kesepakatan dengan
-                    customer. <b>Kosongkan jika customer bayar langsung</b> —
-                    invoice tanpa termin tidak akan masuk hitungan telat.
-                  </Step>
-                  <Step n={5}>
-                    Klik <b>Save</b>. Invoice tersimpan dan mendapat nomor
-                    final.
-                  </Step>
-                </ol>
-              </GuideSection>
+          <GuideSection title="2 · Printing and PDF">
+            <p>
+              Open an invoice and click <b>Print</b>, or use the print button
+              directly on a register row — the print dialog opens by itself. To
+              keep a file, choose &ldquo;Save as PDF&rdquo; as the printer, or
+              use the <b>PDF</b> button.
+            </p>
+          </GuideSection>
 
-              <GuideSection title="2. Print / kirim PDF">
-                <p>
-                  Buka invoice lalu klik <b>Print / PDF</b>, atau langsung klik
-                  tombol <b>Print</b> di baris tabel halaman depan (dialog
-                  print terbuka otomatis). Untuk menyimpan sebagai PDF, pilih
-                  &ldquo;Save as PDF&rdquo; pada pilihan printer. Pilih desain
-                  lewat menu <i>Template</i> di dalam editor.
-                </p>
-              </GuideSection>
+          <GuideSection title="3 · Recording a payment">
+            <p>
+              Click the <b>status pill</b> on the invoice&rsquo;s row. A dialog
+              captures the payment date, the amount actually banked, and — when
+              the customer withholds PPh — the rate and the bukti potong number.
+              To undo it, reopen the same dialog and use <b>Mark unpaid</b>;
+              that clears the whole payment record, including the PPh cut.
+            </p>
+            <p>
+              If less arrived than expected, enter the real figure. The invoice
+              is then marked <span className="pill pill-short">Short</span>, the
+              gap shows under the amount on its row, and it is called out under
+              <b> Banked</b> at the top of the dashboard.
+            </p>
+          </GuideSection>
 
-              <GuideSection title="3. Menandai pembayaran (Paid / Unpaid)">
-                <p>
-                  Setiap invoice baru berstatus{" "}
-                  <Badge tone="amber">Unpaid</Badge>. Saat pembayaran dari
-                  customer masuk, klik badge status di tabel lalu pilih{" "}
-                  <Badge tone="green">Paid</Badge>. Ini penting supaya kartu{" "}
-                  <b>Outstanding</b> dan <b>Overdue</b> di halaman depan selalu
-                  akurat.
-                </p>
-              </GuideSection>
+          <GuideSection title="4 · Reading the status pills">
+            <p>
+              Every invoice carries a pill saying exactly where it stands, so
+              nothing depends on colour alone:
+            </p>
+            <ul className="space-y-1.5">
+              <li>
+                <span className="pill pill-neutral">14d left</span> — in hand,
+                counting down to its due date.
+              </li>
+              <li>
+                <span className="pill pill-neutral">No term</span> — no payment
+                term was agreed, so this one can never run late.
+              </li>
+              <li>
+                <span className="pill pill-open">3d left</span> — due within a
+                week. Worth a follow-up.
+              </li>
+              <li>
+                <span className="pill pill-overdue">Late 6d</span> — past its
+                due date. <b>Chase this one.</b> It is also totalled in the
+                Overdue card at the top.
+              </li>
+              <li>
+                <span className="pill pill-short">Short</span> — paid, but less
+                arrived than the invoice asked for.
+              </li>
+              <li>
+                <span className="pill pill-paid">Paid</span> — settled in full.
+              </li>
+            </ul>
+            <p>
+              The same three colours run through the donut and the monthly bar
+              chart, so green, blue and red mean the same thing everywhere.
+              Click <b>Overdue</b> in the filter row to see everything late at
+              once.
+            </p>
+          </GuideSection>
 
-              <GuideSection title="4. Membaca reminder jatuh tempo">
-                <p>Kolom Due di tabel menunjukkan umur tagihan:</p>
-                <ul className="space-y-1.5">
-                  <li>
-                    <Badge tone="gray">sisa 25 hr</Badge> — masih jauh dari
-                    jatuh tempo.
-                  </li>
-                  <li>
-                    <Badge tone="amber">3 hr lagi</Badge> — jatuh tempo sudah
-                    dekat (≤ 7 hari), siap-siap follow up.
-                  </li>
-                  <li>
-                    <Badge tone="red">telat 12 hr</Badge> — sudah lewat jatuh
-                    tempo, <b>segera tagih customer</b>. Baris ini juga diberi
-                    latar merah dan dijumlahkan di kartu <b>Overdue</b>.
-                  </li>
-                </ul>
-                <p>
-                  Gunakan filter status <b>Overdue</b> untuk melihat semua
-                  tagihan yang harus dikejar sekaligus.
-                </p>
-              </GuideSection>
+          <GuideSection title="5 · Searching, filtering and export">
+            <p>
+              Type an invoice number or customer name into the search box. The
+              buttons under it filter by status, and the two dropdowns pick a
+              month and change the sort. Tick the boxes on the left to move
+              several invoices to the trash at once. <b>Export</b> downloads a
+              spreadsheet matching whatever filters are on — but the four
+              figures and both charts at the top always cover <b>every</b>{" "}
+              invoice, filters or not.
+            </p>
+          </GuideSection>
 
-              <GuideSection title="5. Mencari, menyaring & export">
-                <p>
-                  Ketik nomor invoice atau nama customer di kotak pencarian.
-                  Gunakan dropdown <b>bulan</b> dan <b>status</b> untuk
-                  menyaring, dan klik judul kolom (Invoice No, Date, Total,
-                  Due, dsb.) untuk mengurutkan. Tombol <b>Export</b> mengunduh
-                  rekap CSV sesuai filter aktif — langsung rapi dibuka di
-                  Excel, cocok untuk pembukuan. Kartu ringkasan di atas selalu
-                  menghitung <b>semua</b> invoice, tidak terpengaruh filter.
-                </p>
-              </GuideSection>
+          <GuideSection title="6 · Customers">
+            <p>
+              The <b>Customers</b> page does two jobs: it shows what each
+              customer owes — total, outstanding and overdue, largest first,
+              with a bar showing how much of their billing has been collected —
+              and it holds saved customer details. Click a row to open their
+              panel on the right; add or edit names, addresses and NPWP so they
+              fill the invoice form for you.
+            </p>
+          </GuideSection>
 
-              <GuideSection title="6. Data customer (menu Customers)">
-                <p>
-                  Halaman <b>Customers</b> berisi dua hal: <b>rekap tagihan
-                  per customer</b> (total, outstanding, overdue — urut dari
-                  yang paling banyak nunggak; klik namanya untuk melihat
-                  invoice-invoicenya) dan <b>daftar customer tersimpan</b> —
-                  tambah/edit/hapus nama, alamat, dan Tax ID di sini supaya
-                  muncul di dropdown form invoice.
-                </p>
-              </GuideSection>
+          <GuideSection title="7 · Editing and deleting">
+            <p>
+              Click an invoice number, or the pencil on its row, to open and
+              edit it — the number does not change even if you edit the date. Deleting moves an invoice to{" "}
+              <b>Trash</b> rather than removing it; an admin can restore it or
+              clear it permanently from there.
+            </p>
+          </GuideSection>
 
-              <GuideSection title="7. Mengedit & menghapus">
-                <p>
-                  Klik nomor invoice untuk membuka dan mengeditnya — nomor
-                  invoice tidak akan berubah meski tanggal diedit. Tombol{" "}
-                  <b>Delete</b> memindahkan invoice ke <b>Trash</b> (tidak
-                  langsung hilang); admin bisa memulihkannya atau menghapus
-                  permanen dari menu Trash.
-                </p>
-              </GuideSection>
+          <GuideSection title="8 · Accounts (admins only)">
+            <p>
+              Admins add and remove accounts under <b>Users</b>. Everyone should
+              have their own login so each invoice records who created it.
+            </p>
+          </GuideSection>
 
-              <GuideSection title="8. Akun pengguna (khusus admin)">
-                <p>
-                  Admin dapat menambah/menghapus akun tim lewat menu{" "}
-                  <b>Users</b>. Setiap orang sebaiknya punya akun sendiri agar
-                  kolom <b>By</b> mencatat siapa pembuat tiap invoice.
-                </p>
-              </GuideSection>
-
-              <div className="rounded-lg bg-blue-50 px-4 py-3 text-xs text-blue-700">
-                <b>Tips:</b> biasakan tiga hal — isi termin sesuai kesepakatan,
-                tandai Paid begitu pembayaran masuk, dan cek kartu Overdue
-                setiap pagi. Dengan itu halaman depan selalu jadi daftar tagihan
-                yang akurat.
-              </div>
-
-              <button
-                onClick={() => {
-                  setOpen(false);
-                  window.dispatchEvent(new Event(TOUR_EVENT));
-                }}
-                className="text-xs text-blue-600 hover:underline"
-              >
-                ↻ Putar ulang tur pengenalan halaman
-              </button>
-            </div>
-          </div>
+          <p className="well px-3 py-2.5 text-xs leading-relaxed text-ink-2">
+            <b className="text-ink">Three habits</b> keep the register honest:
+            set the payment term as agreed, record the payment the day it
+            lands, and check the Overdue card each morning.
+          </p>
         </div>
-      )}
+      </Dialog>
     </>
   );
 }

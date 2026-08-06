@@ -9,9 +9,11 @@
     "lint": "eslint"
   },
   "dependencies": {
+    "@gsap/react": "^2.1.2",
     "bcryptjs": "^3.0.3",
     "better-sqlite3": "^12.11.1",
     "exceljs": "^4.4.0",
+    "gsap": "^3.15.0",
     "html2canvas-pro": "^2.2.4",
     "jose": "^6.2.3",
     "jspdf": "^4.2.1",

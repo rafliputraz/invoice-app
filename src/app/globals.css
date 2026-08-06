@@ -1,57 +1,580 @@
 @import "tailwindcss";
 
+/* ============================================================================
+   LEDGER — the app's visual world.
+
+   A light, warm finance dashboard for PT. Salam Fortuna Logistik. White cards
+   float on a soft grey ground with real (soft) elevation, generous spacing,
+   rounded geometry, and charts that carry their share of the work.
+
+   SFL's mark is red, so red is the brand colour here — the sidebar's active
+   state, the primary button, the hero card. Red also means overdue, and that
+   is fine: an overdue invoice always appears as a PILL CARRYING ITS WORD, so
+   status is never mistaken for chrome and never depends on colour alone.
+
+   Printed invoice templates are OUT of this world. They set their own fonts
+   and colours and must not inherit anything here.
+   ========================================================================= */
+
 @theme {
-  --shadow-card:
-    0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
-  --shadow-glow: 0 0 15px -3px rgba(37, 99, 235, 0.4);
-  --shadow-paper:
-    0 0 20px rgba(0, 0, 0, 0.05), 0 4px 6px -2px rgba(0, 0, 0, 0.025);
+  /* --- Ground & surfaces ----------------------------------------------- */
+  --color-bg: #f4f6f5;
+  --color-card: #ffffff;
+  /* Recessed: table heads, wells, inset summaries, hovered rows. */
+  --color-soft: #f7f9f8;
+  --color-line: #e9edeb;
+  --color-line-2: #dde3e0;
+
+  /* --- Ink -------------------------------------------------------------- */
+  --color-ink: #171a1c;
+  --color-ink-2: #5a6570;
+  /* Tertiary. Holds 4.6:1 on --color-card; do not lighten. */
+  --color-ink-3: #737f8a;
+
+  /* --- Brand ------------------------------------------------------------ */
+  /* SFL red, taken from the company mark. */
+  --color-brand: #d6291e;
+  --color-brand-hover: #b92117;
+  /* The hero card's ground. */
+  --color-brand-deep: #8c1a16;
+  /* Active nav pill, tints, icon chips. */
+  --color-brand-soft: #fdecea;
+
+  /* --- Status ----------------------------------------------------------- */
+  /* Validated as a categorical trio on white at all-pairs: worst CVD ΔE 8.6,
+     worst normal-vision ΔE 29.7, all ≥3:1 on the card. Charts and pills use
+     the same three, so a colour means one thing across the whole product. */
+  --color-paid: #15803d;
+  --color-paid-soft: #dcfce7;
+  --color-open: #2563eb;
+  --color-open-soft: #dbeafe;
+  --color-overdue: #dc2626;
+  --color-overdue-soft: #fee2e2;
+  --color-short: #b45309;
+  --color-short-soft: #fef3c7;
+
+  /* --- Type ------------------------------------------------------------- */
+  /* Plus Jakarta Sans, one family for everything. Commissioned for Jakarta's
+     city identity — a real reason to choose it for this company rather than
+     reaching for the default. */
+  --font-sans: var(--font-jakarta), "Segoe UI", system-ui, sans-serif;
+
+  /* --- Geometry --------------------------------------------------------- */
+  --radius-xs: 6px;
+  --radius-sm: 8px;
+  --radius-md: 10px;
+  --radius-lg: 12px;
+  --radius-xl: 14px;
+  --radius-2xl: 16px;
+  --radius-3xl: 20px;
+  --radius-4xl: 24px;
+
+  /* --- Elevation -------------------------------------------------------- */
+  /* Two layers: a tight contact shadow so the edge reads, and a wide soft
+     one so the card lifts. Neither is dark enough to look like a border. */
+  --shadow-card: 0 1px 3px rgba(16, 24, 40, 0.06),
+    0 8px 24px -12px rgba(16, 24, 40, 0.1);
+  --shadow-pop: 0 4px 10px rgba(16, 24, 40, 0.08),
+    0 24px 48px -20px rgba(16, 24, 40, 0.24);
+  --shadow-brand: 0 6px 18px -6px rgba(214, 41, 30, 0.45);
 }
 
-body {
-  background: #f3f4f6;
-  color: #171717;
-  /* App-wide SaaS font (matches the design mockups). The printed invoice
-     templates are unaffected: each sets its own font-[Arial/Calibri,...]. */
-  font-family: var(--font-jakarta), sans-serif;
+@layer base {
+  body {
+    background: var(--color-bg);
+    color: var(--color-ink);
+    font-family: var(--font-sans);
+  }
+
+  /* The printed document is the contract, so it inherits nothing from the
+     app. Each template pins its own face, size and colour; this pins the one
+     property they were leaning on the old body for, so restyling the app can
+     never quietly reset the figures on paper. */
+  #invoice-print {
+    font-variant-numeric: tabular-nums;
+  }
+
+  .app-font {
+    font-family: var(--font-sans);
+  }
+
+  ::selection {
+    background: var(--color-brand-soft);
+    color: var(--color-brand-deep);
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--color-brand);
+    outline-offset: 2px;
+    border-radius: 4px;
+  }
+
+  ::-webkit-scrollbar {
+    width: 12px;
+    height: 12px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: #cdd6d2;
+    border: 3.5px solid transparent;
+    background-clip: content-box;
+    border-radius: 99px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: #b3bdb9;
+    background-clip: content-box;
+  }
 }
 
-/* Kept for portalled/standalone bits and the scoped scrollbar styles below. */
-.app-font {
-  font-family: var(--font-jakarta), sans-serif;
+@layer components {
+  /* ==========================================================================
+     TYPE ROLES
+     One family, ordinary sentence case. No uppercase-mono labels — they made
+     three previous attempts read like a terminal instead of a product.
+     ======================================================================== */
+
+  /* A field or section label. */
+  .lbl {
+    font-size: 0.8125rem;
+    font-weight: 500;
+    line-height: 1.4;
+    color: var(--color-ink-2);
+  }
+  .lbl-strong {
+    color: var(--color-ink);
+    font-weight: 600;
+  }
+
+  /* Secondary prose: hints, sub-lines, notes. */
+  .note {
+    font-size: 0.8125rem;
+    line-height: 1.55;
+    color: var(--color-ink-2);
+  }
+
+  /* Any figure. Tabular so columns of money line up. */
+  .fig {
+    font-variant-numeric: tabular-nums;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    color: var(--color-ink);
+  }
+  /* Section heading above a group of cards. */
+  .h-sec {
+    font-size: 1rem;
+    font-weight: 700;
+    letter-spacing: -0.015em;
+    color: var(--color-ink);
+  }
+
+  /* ==========================================================================
+     CARDS
+     ======================================================================== */
+
+  .card {
+    background: var(--color-card);
+    border-radius: var(--radius-2xl);
+    box-shadow: var(--shadow-card);
+  }
+  /* The one saturated surface: the headline figure sits on the brand. */
+  .card-brand {
+    background:
+      radial-gradient(
+        120% 120% at 100% 0%,
+        rgba(255, 255, 255, 0.18),
+        transparent 60%
+      ),
+      linear-gradient(150deg, var(--color-brand) 0%, var(--color-brand-deep) 100%);
+    color: #fff;
+    border-radius: var(--radius-2xl);
+    box-shadow: var(--shadow-brand);
+  }
+
+  /* An inset strip inside a card — summaries, totals, quiet groupings. */
+  .well {
+    background: var(--color-soft);
+    border-radius: var(--radius-lg);
+  }
+
+  /* Legacy names from the previous system, mapped onto cards so unconverted
+     screens stay coherent. */
+  .panel {
+    background: var(--color-card);
+    border-radius: var(--radius-2xl);
+    box-shadow: var(--shadow-card);
+    overflow: hidden;
+  }
+  .panel-head {
+    border-bottom: 1px solid var(--color-line);
+    background: var(--color-card);
+  }
+
+  /* A rounded tile holding an icon, in a status or brand tint. */
+  .iconchip {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.5rem;
+    height: 2.5rem;
+    flex-shrink: 0;
+    border-radius: var(--radius-lg);
+    background: var(--color-soft);
+    color: var(--color-ink-2);
+  }
+
+  /* ==========================================================================
+     PILLS — state, always carrying its word.
+     ======================================================================== */
+
+  .pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    border-radius: 999px;
+    padding: 0.2rem 0.6rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    line-height: 1.45;
+    white-space: nowrap;
+  }
+  .pill-paid {
+    color: var(--color-paid);
+    background: var(--color-paid-soft);
+  }
+  .pill-open {
+    color: var(--color-open);
+    background: var(--color-open-soft);
+  }
+  .pill-overdue {
+    color: var(--color-overdue);
+    background: var(--color-overdue-soft);
+  }
+  .pill-short {
+    color: var(--color-short);
+    background: var(--color-short-soft);
+  }
+  .pill-neutral {
+    color: var(--color-ink-2);
+    background: var(--color-soft);
+  }
+
+  /* ==========================================================================
+     SIDEBAR
+     ======================================================================== */
+
+  .navitem {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    border-radius: var(--radius-lg);
+    padding: 0.625rem 0.75rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--color-ink-2);
+    transition:
+      background-color 140ms ease,
+      color 140ms ease;
+  }
+  .navitem:hover {
+    background: var(--color-soft);
+    color: var(--color-ink);
+  }
+  .navitem[aria-current="page"] {
+    background: var(--color-brand-soft);
+    color: var(--color-brand);
+    font-weight: 600;
+  }
+
+  /* ==========================================================================
+     CONTROLS
+     ======================================================================== */
+
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.45rem;
+    border: 1px solid var(--color-line-2);
+    border-radius: var(--radius-md);
+    background: var(--color-card);
+    color: var(--color-ink);
+    padding: 0.5rem 0.9rem;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    line-height: 1.4;
+    white-space: nowrap;
+    transition:
+      background-color 140ms ease,
+      border-color 140ms ease,
+      box-shadow 140ms ease,
+      color 140ms ease;
+  }
+  .btn:hover:not(:disabled) {
+    background: var(--color-soft);
+    border-color: #cdd6d2;
+  }
+  .btn:disabled {
+    color: var(--color-ink-3);
+    background: var(--color-soft);
+    border-color: var(--color-line);
+    cursor: not-allowed;
+  }
+
+  .btn-primary {
+    background: var(--color-brand);
+    border-color: var(--color-brand);
+    color: #fff;
+    box-shadow: var(--shadow-brand);
+  }
+  .btn-primary:hover:not(:disabled) {
+    background: var(--color-brand-hover);
+    border-color: var(--color-brand-hover);
+  }
+  .btn-cleared {
+    background: var(--color-paid);
+    border-color: var(--color-paid);
+    color: #fff;
+  }
+  .btn-cleared:hover:not(:disabled) {
+    background: #11662f;
+    border-color: #11662f;
+  }
+  .btn-quiet {
+    border-color: transparent;
+    background: transparent;
+    color: var(--color-ink-2);
+  }
+  .btn-quiet:hover:not(:disabled) {
+    background: var(--color-soft);
+    border-color: transparent;
+    color: var(--color-ink);
+  }
+  .btn-sm {
+    padding: 0.35rem 0.65rem;
+    font-size: 0.75rem;
+  }
+
+  .field {
+    display: block;
+    width: 100%;
+    border: 1px solid var(--color-line-2);
+    border-radius: var(--radius-md);
+    background: var(--color-card);
+    color: var(--color-ink);
+    padding: 0.55rem 0.75rem;
+    font-size: 0.875rem;
+    line-height: 1.4;
+    transition:
+      border-color 140ms ease,
+      box-shadow 140ms ease;
+  }
+  .field::placeholder {
+    color: var(--color-ink-3);
+  }
+  .field:hover:not(:disabled):not(:focus) {
+    border-color: #cdd6d2;
+  }
+  .field:focus {
+    outline: none;
+    border-color: var(--color-brand);
+    box-shadow: 0 0 0 3px var(--color-brand-soft);
+  }
+  .field:disabled {
+    background: var(--color-soft);
+    color: var(--color-ink-3);
+  }
+  .field-num,
+  input[type="date"].field,
+  input[type="number"].field {
+    font-variant-numeric: tabular-nums;
+  }
+  .field-num {
+    text-align: right;
+  }
+
+  select.field {
+    appearance: none;
+    background-image:
+      linear-gradient(45deg, transparent 50%, var(--color-ink-2) 50%),
+      linear-gradient(135deg, var(--color-ink-2) 50%, transparent 50%);
+    background-position:
+      calc(100% - 16px) calc(50% + 1px),
+      calc(100% - 11px) calc(50% + 1px);
+    background-size:
+      5px 5px,
+      5px 5px;
+    background-repeat: no-repeat;
+    padding-right: 2.1rem;
+  }
+
+  .check {
+    appearance: none;
+    width: 1.05rem;
+    height: 1.05rem;
+    border: 1.5px solid var(--color-line-2);
+    border-radius: var(--radius-xs);
+    background: var(--color-card);
+    display: inline-grid;
+    place-content: center;
+    flex-shrink: 0;
+    transition:
+      background-color 140ms ease,
+      border-color 140ms ease;
+  }
+  .check::before {
+    content: "";
+    width: 0.5rem;
+    height: 0.5rem;
+    border-radius: 2px;
+    transform: scale(0);
+    background: #fff;
+    transition: transform 140ms ease;
+  }
+  .check:checked {
+    background: var(--color-brand);
+    border-color: var(--color-brand);
+  }
+  .check:checked::before {
+    transform: scale(1);
+  }
+  .check:hover:not(:disabled) {
+    border-color: var(--color-brand);
+  }
+
+  /* ==========================================================================
+     TABLE
+     ======================================================================== */
+
+  .register {
+    width: 100%;
+    border-collapse: collapse;
+  }
+  .register thead th {
+    padding: 0.7rem 1rem;
+    text-align: left;
+    white-space: nowrap;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--color-ink-3);
+    border-bottom: 1px solid var(--color-line);
+  }
+  .register tbody td {
+    padding: 0.8rem 1rem;
+    vertical-align: middle;
+    border-bottom: 1px solid var(--color-line);
+  }
+  .register tbody tr:last-child td {
+    border-bottom: 0;
+  }
+  .register tbody tr {
+    transition: background-color 120ms ease;
+  }
+  .register tbody tr:hover {
+    background: var(--color-soft);
+  }
+  .register tbody tr[data-selected="true"] {
+    background: var(--color-brand-soft);
+  }
+
+  /* ==========================================================================
+     PROGRESS
+     ======================================================================== */
+
+  .track {
+    height: 0.5rem;
+    border-radius: 999px;
+    background: var(--color-line);
+    overflow: hidden;
+  }
+  .track > span {
+    display: block;
+    height: 100%;
+    border-radius: 999px;
+  }
+
+  /* The invoice number, set plainly. The boxed "marking block" belonged to a
+     harder-edged world; here the number is just legible and tabular. */
+  .marking {
+    display: inline-flex;
+    align-items: baseline;
+    font-variant-numeric: tabular-nums;
+    font-weight: 600;
+    font-size: 0.875rem;
+    color: var(--color-ink);
+    white-space: nowrap;
+  }
+  .marking-part + .marking-part::before {
+    content: "/";
+    margin: 0 0.15rem;
+    color: var(--color-ink-3);
+    font-weight: 400;
+  }
+  .marking-seq {
+    color: var(--color-brand);
+    font-weight: 700;
+  }
+  a.marking:hover {
+    color: var(--color-brand);
+  }
 }
 
-/* Login page: dotted grid backdrop for the right panel */
-.pattern-grid {
-  background-image: radial-gradient(rgba(255, 255, 255, 0.15) 1px, transparent 1px);
-  background-size: 32px 32px;
+/* The authored moment: recording a payment. The status pill on the row that
+   actually changed gives one confirming pulse — the only motion in the app
+   that responds to something the user just did rather than to a page loading. */
+@keyframes repaid {
+  0% {
+    transform: scale(1);
+  }
+  38% {
+    transform: scale(1.16);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+.just-paid {
+  animation: repaid 520ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-/* Thin scrollbars for the shell */
-.app-font ::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+@keyframes settle {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
 }
-.app-font ::-webkit-scrollbar-track {
-  background: transparent;
-}
-.app-font ::-webkit-scrollbar-thumb {
-  background: #cbd5e1;
-  border-radius: 10px;
-}
-.app-font ::-webkit-scrollbar-thumb:hover {
-  background: #94a3b8;
+.settle {
+  animation: settle 200ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-/* ===== Print: show only the invoice ===== */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* ===== Print: the invoice, and nothing else ===== */
 @page {
   size: A4;
   margin: 8mm;
 }
 
 @media print {
+  html,
   body {
-    background: white;
+    background: #fff !important;
+    color: #000 !important;
+    overflow: visible !important;
+    height: auto !important;
   }
   .no-print {
     display: none !important;
@@ -59,14 +582,15 @@ body {
   .print-area {
     overflow: visible !important;
     padding: 0 !important;
+    background: #fff !important;
   }
-  /* Flatten the app chrome so only the invoice flows onto the page */
   .print-root,
   .print-root > div {
     display: block !important;
     height: auto !important;
     min-height: 0 !important;
-    background: white !important;
+    overflow: visible !important;
+    background: #fff !important;
   }
   #invoice-print {
     width: 100% !important;
